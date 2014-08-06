@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<pre-dex-items>
+
+    <item
+        dex="/Users/richie/Developer/Android/HalfwayHouse/halfwayhouse/build/intermediates/pre-dexed/debug/classes-75e237b1ad9ff88092d2f54f258b5a22cb9e1361.jar"
+        jar="/Users/richie/Developer/Android/HalfwayHouse/halfwayhouse/build/intermediates/exploded-aar/com.google.android.gms/play-services/5.0.89/classes.jar"
+        jumboMode="false"
+        revision="20.0.0"
+        sha1="d71573c9c5ea98a8db47ad6ff993a63d492b3bfa"/>
+    <item
+        dex="/Users/richie/Developer/Android/HalfwayHouse/halfwayhouse/build/intermediates/pre-dexed/debug/support-v4-19.1.0-4f61747eb17d9ea0539282d744ab705e2528415f.jar"
+        jar="/Users/richie/Developer/Android/android-sdk-macosx/extras/android/m2repository/com/android/support/support-v4/19.1.0/support-v4-19.1.0.jar"
+        jumboMode="false"
+        revision="19.1.0"
+        sha1="85f201b380937e61a9dce6ca90ccf6872abbfb67"/>
+
+</pre-dex-items>
