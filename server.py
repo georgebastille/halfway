@@ -10,6 +10,7 @@ import sqlite3
 import pprint
 import collections
 import math
+from operator import add
 
 # Rotates a list l by n elements
 def rotate(l,n):
@@ -96,7 +97,19 @@ class HalfwayLookup():
         vals.sort(key=lambda tup: tup[2])
         for val in vals[:4]:
             print val
-        return vals[:4]
+
+        val2 = list(vals)
+
+        print "Top 4 locations by total time"
+        vals.sort(key=lambda tup: tup[1])
+        for val in vals[:4]:
+            print val
+
+        wee = map(add, val2, vals)
+
+        jizz = [(x[0], x[1] + x[2]) for x in vals]
+        jizz.sort(key=lambda tup: tup[1])
+        return jizz[:10]
 
 
 HOST_NAME = '127.0.0.1' # !!!REMEMBER TO CHANGE THIS!!!
