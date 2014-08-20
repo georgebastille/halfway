@@ -1,15 +1,10 @@
-#!/usr/bin/python
+## Program to work out the shortest route utilising Dikstra's Algorithm.
 
-import BaseHTTPServer
-import time
-import os
-import re
-import cgi
-import json
 import sqlite3
 import pprint
 import collections
 import math
+
 
 # Rotates a list l by n elements
 def rotate(l,n):
@@ -30,8 +25,6 @@ def diffs(a):
 class HalfwayLookup():
 
     def lookup(self, entryPoints):
-        print type(entryPoints[0])
-        print entryPoints[0]
 
         conn = sqlite3.connect('halfwayDB.db')
 
@@ -44,7 +37,6 @@ class HalfwayLookup():
 
         selectionString = "SELECT STATIONB, WEIGHT FROM fullRouteWeights WHERE "
         for station in entryPoints:
-            print station
             selectionString += "STATIONA = '"
             selectionString += station
             selectionString += "' OR "
@@ -58,7 +50,6 @@ class HalfwayLookup():
             cur = conn.cursor()   
             cur.execute(selectionString)
             rows = cur.fetchall()
-            print "rows = ", rows
 
         # Now we have a list like Vic 2, Vic 3, Vic 4, KX, 1, KX, 2 KX, 3
         # so we go through the list, comparing the name of the current element to the previous element
@@ -98,49 +89,7 @@ class HalfwayLookup():
             print val
         return vals[:4]
 
-
-HOST_NAME = '127.0.0.1' # !!!REMEMBER TO CHANGE THIS!!!
-PORT_NUMBER = 9000 # Maybe set this to 9000.
-
-class HalfwayHandler(BaseHTTPServer.BaseHTTPRequestHandler):
-    def do_POST(self):
-        if None != re.search('/api/v1/lookup', self.path):
-            ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))
-            if ctype == 'application/json':
-                length = int(self.headers.getheader('content-length'))
-                dataJSON = cgi.parse_qs(self.rfile.read(length), keep_blank_values=1)
-
-                values = json.loads(dataJSON.keys()[0])
-                print type(values)
-                print values
-                lookup = HalfwayLookup()
-                res = lookup.lookup(values)
-                print res
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps(res))
-            else:
-                self.send_response(400, 'Bad Request: record does not exist')
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
-        else:
-            self.send_response(403)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-
-        return
-
-if __name__ == '__main__':
-    server_class = BaseHTTPServer.HTTPServer
-    httpd = server_class((HOST_NAME, PORT_NUMBER), HalfwayHandler)
-    print time.asctime(), "Server Starts - %s:%s" % (HOST_NAME, PORT_NUMBER)
-    try:
-        httpd.serve_forever()
-    except KeyboardInterrupt:
-        pass
-    httpd.server_close()
-    print time.asctime(), "Server Stops - %s:%s" % (HOST_NAME, PORT_NUMBER)
-
-
-
+        print "Top 4 locations by total time"
+        vals.sort(key=lambda tup: tup[1])
+        for val in vals[:4]:
+            print val
