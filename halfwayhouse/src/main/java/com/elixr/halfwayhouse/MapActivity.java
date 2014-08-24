@@ -8,6 +8,7 @@ import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -18,7 +19,16 @@ import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.BasicResponseHandler;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.json.JSONArray;
+
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -30,6 +40,10 @@ public class MapActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
+
         setContentView(R.layout.activity_map);
 
         setUpMapIfNeeded();
@@ -37,6 +51,36 @@ public class MapActivity extends Activity {
         final Button button = (Button) findViewById(R.id.button);
         button.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
+
+                HttpClient client = new DefaultHttpClient();
+                HttpPost post = new HttpPost("http://192.168.1.67:9000/api/v1/lookup");
+
+                JSONArray stations = new JSONArray();
+                stations.put("CFS");
+                stations.put("RMD");
+                stations.put("UXB");
+
+                try {
+                    post.setEntity(new StringEntity(stations.toString()));
+
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
+
+                //sets a request header so the page receving the request
+                //will know what to do with it
+                post.setHeader("Accept", "application/json");
+                post.setHeader("Content-type", "application/json");
+
+
+                //Handles what is returned from the page
+                ResponseHandler responseHandler = new BasicResponseHandler();
+                try {
+                    client.execute(post, responseHandler);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
                 Geocoder geocoder = new Geocoder(getBaseContext(), Locale.getDefault());
                 List<Address> addresses = new ArrayList<Address>();
 
