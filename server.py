@@ -112,7 +112,7 @@ class HalfwayLookup():
         return jizz[:10]
 
 
-HOST_NAME = '127.0.0.1' # !!!REMEMBER TO CHANGE THIS!!!
+HOST_NAME = '192.168.1.67' # !!!REMEMBER TO CHANGE THIS!!!
 PORT_NUMBER = 9000 # Maybe set this to 9000.
 
 class HalfwayHandler(BaseHTTPServer.BaseHTTPRequestHandler):
