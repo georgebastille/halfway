@@ -9,6 +9,7 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.StrictMode;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -16,9 +17,11 @@ import android.widget.EditText;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpPost;
@@ -26,6 +29,8 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -51,35 +56,6 @@ public class MapActivity extends Activity {
         final Button button = (Button) findViewById(R.id.button);
         button.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-
-                HttpClient client = new DefaultHttpClient();
-                HttpPost post = new HttpPost("http://192.168.1.67:9000/api/v1/lookup");
-
-                JSONArray stations = new JSONArray();
-                stations.put("CFS");
-                stations.put("RMD");
-                stations.put("UXB");
-
-                try {
-                    post.setEntity(new StringEntity(stations.toString()));
-
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                }
-
-                //sets a request header so the page receving the request
-                //will know what to do with it
-                post.setHeader("Accept", "application/json");
-                post.setHeader("Content-type", "application/json");
-
-
-                //Handles what is returned from the page
-                ResponseHandler responseHandler = new BasicResponseHandler();
-                try {
-                    client.execute(post, responseHandler);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
 
                 Geocoder geocoder = new Geocoder(getBaseContext(), Locale.getDefault());
                 List<Address> addresses = new ArrayList<Address>();
@@ -113,14 +89,64 @@ public class MapActivity extends Activity {
                     e.printStackTrace();
                 }
 
+                JSONArray jsonLocations = new JSONArray();
 
                 for (Address location : addresses) {
                     LatLng locationLatLng = new LatLng(location.getLatitude(), location.getLongitude());
                     mMap.addMarker(new MarkerOptions()
                             .title(location.getPostalCode())
                             .position(locationLatLng));
+                    JSONArray jsonLocationLatLong = new JSONArray();
+                    try {
+                        jsonLocationLatLong.put(location.getLatitude());
+                        jsonLocationLatLong.put(location.getLongitude());
+                        jsonLocations.put(jsonLocationLatLong);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+
                 }
                 // Perform action on click
+
+                HttpClient client = new DefaultHttpClient();
+                HttpPost post = new HttpPost("http://192.168.1.79:9000/api/v1/lookup");
+
+                try {
+                    post.setEntity(new StringEntity(jsonLocations.toString()));
+
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
+
+                // sets a request header so the page receiving the request
+                // will know what to do with it
+                post.setHeader("Accept", "application/json");
+                post.setHeader("Content-type", "application/json");
+
+                //Handles what is returned from the page
+                ResponseHandler<String> responseHandler = new BasicResponseHandler();
+
+
+                try {
+                    String response = client.execute(post, responseHandler);
+                    Log.d("HTTP response", response);
+                    JSONArray results = new JSONArray(response);
+
+                    for (int i = 0; i < results.length(); ++i)
+                    {
+                        JSONArray result = results.getJSONArray(i);
+                        LatLng locationLatLng = new LatLng(result.getDouble(1), result.getDouble(2));
+                        mMap.addMarker(new MarkerOptions()
+                                .title(result.getString(0))
+                                .position(locationLatLng)
+                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
+                    }
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
             }
         });
 
