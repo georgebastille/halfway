@@ -26,7 +26,7 @@ def diffs(a):
 def lookup(entryPoints):
     print "Finding Halfway House for entry points: ", entryPoints
 
-    conn = sqlite3.connect('halfwayDB.db')
+    conn = sqlite3.connect('halfway.db')
 
     # This next line converts the pesky unicode output from sqlite3 to a
     # string. Removes the u bit
@@ -86,10 +86,51 @@ def lookup(entryPoints):
     print "Top 4 locations by total + delta time"
     jizz = [(x[0], x[1] + x[2]) for x in vals]
     jizz.sort(key=lambda tup: tup[1])
-    for val in jizz[:10]:
+    for val in jizz[:3]:
         print val
-    return jizz[:10]
+    return jizz[:3]
+
+
+def neareststation(lat, lon):
+    print "Start lookup for latitude:", lat, " longitude: ", lon
+    querystr = """SELECT code, ((latitude - ?) * (latitude - ?)) + ((longitude - ?) * (longitude - ?)) AS dist FROM stations ORDER BY dist LIMIT 1"""
+
+    conn = sqlite3.connect('halfway.db')
+    with conn:
+        cur = conn.cursor()
+        cur.execute(querystr, (lat, lat, lon, lon))
+        rows = cur.fetchall()
+    print "Finished lookup, nearest station is ", rows[0][0]
+
+    return rows[0][0]
+
+def findstations(latlonvalues):
+    stations = []
+    for latlon in latlonvalues:
+        stations.append(neareststation(latlon[0], latlon[1]))
+    return stations
+
+def reverselookup(stationcodes):
+    conn = sqlite3.connect('halfway.db')
+    querystr = """SELECT name, latitude, longitude FROM stations WHERE code = ? LIMIT 1"""
+    stations = []
+
+    with conn:
+        cur = conn.cursor()
+        for stationcode in stationcodes:
+            cur.execute(querystr, (stationcode[0],))
+            rows = cur.fetchall()
+            station = []
+            station.append(rows[0][0])
+            station.append(rows[0][1])
+            station.append(rows[0][2])
+            stations.append(station)
+    return stations
+
 
 if __name__ == '__main__':
     stations = ["CFS", "RMD", "UXB"]
     print lookup(stations)
+    print neareststation(51.5113621, -0.090236119)
+
+

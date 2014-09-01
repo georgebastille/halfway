@@ -24,14 +24,16 @@ class HalfwayHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 length = int(self.headers.getheader('content-length'))
                 dataJSON = cgi.parse_qs(self.rfile.read(length), keep_blank_values=1)
 
-                values = json.loads(dataJSON.keys()[0])
+                latlonvalues = json.loads(dataJSON.keys()[0])
+                stationcodes = lookup.findstations(latlonvalues)
 
                 #stations = stationLookup(values)
-                res = lookup.lookup(values)
+                optimalstations = lookup.lookup(stationcodes)
+                optimallatlongs = lookup.reverselookup(optimalstations)
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
-                self.wfile.write(json.dumps(res))
+                self.wfile.write(json.dumps(optimallatlongs))
             else:
                 self.send_response(400, 'Bad Request: record does not exist')
                 self.send_header('Content-Type', 'application/json')
