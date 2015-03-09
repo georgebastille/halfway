@@ -24,6 +24,10 @@ def diffs(a):
 
 
 def lookup(entryPoints):
+
+    if not entryPoints:
+        return
+
     print "Finding Halfway House for entry points: ", entryPoints
 
     conn = sqlite3.connect('halfway.db')
