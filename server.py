@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
 import BaseHTTPServer
+import socket
+import SocketServer
 import time
 import re
 import cgi
@@ -13,6 +15,11 @@ import lookup
 
 HOST_NAME = network.mylanip()  # !!!REMEMBER TO CHANGE THIS!!!
 PORT_NUMBER = 9000  # Maybe set this to 9000.
+
+class MyTCPServer(SocketServer.TCPServer):
+    def server_bind(self):
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.socket.bind(self.server_address)
 
 
 class HalfwayHandler(BaseHTTPServer.BaseHTTPRequestHandler):
@@ -29,6 +36,12 @@ class HalfwayHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
                 #stations = stationLookup(values)
                 optimalstations = lookup.lookup(stationcodes)
+                if not optimalstations:
+                    self.send_response(400, 'Bad Request: no input stations')
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    return
+
                 optimallatlongs = lookup.reverselookup(optimalstations)
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
@@ -47,7 +60,7 @@ class HalfwayHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 if __name__ == '__main__':
     server_class = BaseHTTPServer.HTTPServer
-    httpd = server_class((HOST_NAME, PORT_NUMBER), HalfwayHandler)
+    httpd = MyTCPServer((HOST_NAME, PORT_NUMBER), HalfwayHandler)
     print time.asctime(), "Server Starts - %s:%s" % (HOST_NAME, PORT_NUMBER)
     try:
         httpd.serve_forever()
