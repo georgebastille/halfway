@@ -33,13 +33,9 @@ class HalfwayHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
                 latlonvalues = json.loads(dataJSON.keys()[0])
                 stationcodes = lookup.findstations(latlonvalues)
-
-                #stations = stationLookup(values)
                 optimalstations = lookup.lookup(stationcodes)
                 if not optimalstations:
-                    self.send_response(400, 'Bad Request: no input stations')
-                    self.send_header('Content-Type', 'application/json')
-                    self.end_headers()
+                    send_error(400, 'Bad Request: no input stations')
                     return
 
                 optimallatlongs = lookup.reverselookup(optimalstations)
@@ -48,15 +44,18 @@ class HalfwayHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(json.dumps(optimallatlongs))
             else:
-                self.send_response(400, 'Bad Request: record does not exist')
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
+                send_error(400, 'Bad Request: record does not exist')
         else:
-            self.send_response(403)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
+            send_error(403, "")
 
-        return
+    def do_GET(self):
+        send_error(400, 'GET not supported')
+
+    def send_error(code, msg):
+        self.send_response(code, msg)
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+
 
 if __name__ == '__main__':
     server_class = BaseHTTPServer.HTTPServer

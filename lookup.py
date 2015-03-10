@@ -94,7 +94,6 @@ def lookup(entryPoints):
         print val
     return jizz[:3]
 
-
 def neareststation(lat, lon):
     print "Start lookup for latitude:", lat, " longitude: ", lon
     querystr = """SELECT code, ((latitude - ?) * (latitude - ?)) + ((longitude - ?) * (longitude - ?)) AS dist FROM stations ORDER BY dist LIMIT 1"""
@@ -103,15 +102,21 @@ def neareststation(lat, lon):
     with conn:
         cur = conn.cursor()
         cur.execute(querystr, (lat, lat, lon, lon))
-        rows = cur.fetchall()
-    print "Finished lookup, nearest station is ", rows[0][0]
+        row = cur.fetchone()
 
-    return rows[0][0]
+    if row:
+        print "Finished lookup, nearest station is ", row[0]
+        return row[0]
+    else:
+        print "Finished lookup, no nearest station found"
+        return
 
 def findstations(latlonvalues):
     stations = []
     for latlon in latlonvalues:
-        stations.append(neareststation(latlon[0], latlon[1]))
+        station = neareststation(latlon[0], latlon[1])
+        if station:
+            stations.append(station)
     return stations
 
 def reverselookup(stationcodes):
@@ -123,11 +128,11 @@ def reverselookup(stationcodes):
         cur = conn.cursor()
         for stationcode in stationcodes:
             cur.execute(querystr, (stationcode[0],))
-            rows = cur.fetchall()
+            row = cur.fetchone()
             station = []
-            station.append(rows[0][0])
-            station.append(rows[0][1])
-            station.append(rows[0][2])
+            station.append(row[0])
+            station.append(row[1])
+            station.append(row[2])
             stations.append(station)
     return stations
 
