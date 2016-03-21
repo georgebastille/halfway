@@ -1,17 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<pre-dex-items>
+<items version="2" >
 
     <item
-        dex="/Users/richie/Developer/Android/HalfwayHouse/halfwayhouse/build/intermediates/pre-dexed/debug/classes-75e237b1ad9ff88092d2f54f258b5a22cb9e1361.jar"
-        jar="/Users/richie/Developer/Android/HalfwayHouse/halfwayhouse/build/intermediates/exploded-aar/com.google.android.gms/play-services/5.0.89/classes.jar"
+        jar="/Users/richie/Developer/Android/android-sdk-macosx/extras/android/m2repository/com/android/support/support-annotations/20.0.0/support-annotations-20.0.0.jar"
         jumboMode="false"
-        revision="20.0.0"
-        sha1="d71573c9c5ea98a8db47ad6ff993a63d492b3bfa"/>
+        revision="21.1.1"
+        sha1="9d9013e9ff35fc3756411e62873c363c70c638fa">
+        <dex dex="/Users/richie/Google Drive/Developer/Android/HalfwayHouse/halfwayhouse/build/intermediates/pre-dexed/debug/support-annotations-20.0.0-90d249e47a42cb4bba304fc0812f7fd06e8bdd1a.jar" />
+    </item>
     <item
-        dex="/Users/richie/Developer/Android/HalfwayHouse/halfwayhouse/build/intermediates/pre-dexed/debug/support-v4-19.1.0-4f61747eb17d9ea0539282d744ab705e2528415f.jar"
-        jar="/Users/richie/Developer/Android/android-sdk-macosx/extras/android/m2repository/com/android/support/support-v4/19.1.0/support-v4-19.1.0.jar"
+        jar="/Users/richie/Google Drive/Developer/Android/HalfwayHouse/halfwayhouse/build/intermediates/exploded-aar/com.android.support/support-v4/20.0.0/libs/internal_impl-20.0.0.jar"
         jumboMode="false"
-        revision="19.1.0"
-        sha1="85f201b380937e61a9dce6ca90ccf6872abbfb67"/>
+        revision="21.1.1"
+        sha1="e40b3078e3fbd353c9f44da8df25a8fc0078209d">
+        <dex dex="/Users/richie/Google Drive/Developer/Android/HalfwayHouse/halfwayhouse/build/intermediates/pre-dexed/debug/internal_impl-20.0.0-8fca36c08ffa85dcd1c0963990d2de4e340cb168.jar" />
+    </item>
+    <item
+        jar="/Users/richie/Google Drive/Developer/Android/HalfwayHouse/halfwayhouse/build/intermediates/exploded-aar/com.google.android.gms/play-services/6.1.71/classes.jar"
+        jumboMode="false"
+        revision="21.1.1"
+        sha1="0f6d5c1ef2e982c3b7858408e3df389cf5d202da">
+        <dex dex="/Users/richie/Google Drive/Developer/Android/HalfwayHouse/halfwayhouse/build/intermediates/pre-dexed/debug/classes-570260939fc0d139283375498b8a53e609e9e4d8.jar" />
+    </item>
+    <item
+        jar="/Users/richie/Google Drive/Developer/Android/HalfwayHouse/halfwayhouse/build/intermediates/exploded-aar/com.android.support/support-v4/20.0.0/classes.jar"
+        jumboMode="false"
+        revision="21.1.1"
+        sha1="8694693636ab36910c8100ce527c258ff3ebece0">
+        <dex dex="/Users/richie/Google Drive/Developer/Android/HalfwayHouse/halfwayhouse/build/intermediates/pre-dexed/debug/classes-8024dd61cf348f5d56caf1f353491194132e595a.jar" />
+    </item>
 
-</pre-dex-items>
+</items>

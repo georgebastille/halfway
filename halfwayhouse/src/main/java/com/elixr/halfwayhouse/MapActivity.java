@@ -1,12 +1,15 @@
 package com.elixr.halfwayhouse;
 
 
+import android.Manifest;
 import android.app.Activity;
+import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Criteria;
 import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.util.Log;
@@ -19,18 +22,11 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.ResponseHandler;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.BasicResponseHandler;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -38,12 +34,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-public class MapActivity extends Activity {
+public class MapActivity extends Activity
+{
 
     GoogleMap mMap;
+    List<EditText> locationFields;
+    JSONArray jsonLocations;
+    EditText locationEntry;
+    Marker resultLocation;
+    final Object syncLock = new Object();
+
+    Geocoder geocoder;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState)
+    {
         super.onCreate(savedInstanceState);
 
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
@@ -53,108 +58,39 @@ public class MapActivity extends Activity {
 
         setUpMapIfNeeded();
 
-        final Button button = (Button) findViewById(R.id.button);
-        button.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
+        locationFields = new ArrayList<>();
+        geocoder = new Geocoder(getBaseContext(), Locale.getDefault());
 
-                Geocoder geocoder = new Geocoder(getBaseContext(), Locale.getDefault());
-                List<Address> addresses = new ArrayList<Address>();
+        jsonLocations = new JSONArray();
 
-                try {
-                    EditText address1EditText = (EditText) findViewById(R.id.address1EditText);
-                    String address1 = address1EditText.getText().toString();
-                    if (null != address1 && !address1.isEmpty()) {
-                        addresses.addAll(geocoder.getFromLocationName(address1, 1));
-                    }
-
-                    EditText address2EditText = (EditText) findViewById(R.id.address2EditText);
-                    String address2 = address2EditText.getText().toString();
-                    if (null != address2 && !address2.isEmpty()) {
-                        addresses.addAll(geocoder.getFromLocationName(address2, 1));
-                    }
-
-                    EditText address3EditText = (EditText) findViewById(R.id.address3EditText);
-                    String address3 = address3EditText.getText().toString();
-                    if (null != address3 && !address3.isEmpty()) {
-                        addresses.addAll(geocoder.getFromLocationName(address3, 1));
-                    }
-
-                    EditText address4EditText = (EditText) findViewById(R.id.address4EditText);
-                    String address4 = address4EditText.getText().toString();
-                    if (null != address4 && !address4.isEmpty()) {
-                        addresses.addAll(geocoder.getFromLocationName(address4, 1));
-                    }
-
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                JSONArray jsonLocations = new JSONArray();
-
-                for (Address location : addresses) {
-                    LatLng locationLatLng = new LatLng(location.getLatitude(), location.getLongitude());
-                    mMap.addMarker(new MarkerOptions()
-                            .title(location.getPostalCode())
-                            .position(locationLatLng));
-                    JSONArray jsonLocationLatLong = new JSONArray();
-                    try {
-                        jsonLocationLatLong.put(location.getLatitude());
-                        jsonLocationLatLong.put(location.getLongitude());
-                        jsonLocations.put(jsonLocationLatLong);
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-
-                }
-                // Perform action on click
-
-                HttpClient client = new DefaultHttpClient();
-                HttpPost post = new HttpPost("http://192.168.1.79:9000/api/v1/lookup");
-
-                try {
-                    post.setEntity(new StringEntity(jsonLocations.toString()));
-
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                }
-
-                // sets a request header so the page receiving the request
-                // will know what to do with it
-                post.setHeader("Accept", "application/json");
-                post.setHeader("Content-type", "application/json");
-
-                //Handles what is returned from the page
-                ResponseHandler<String> responseHandler = new BasicResponseHandler();
+        locationEntry = ((EditText) findViewById(R.id.address1EditText));
 
 
-                try {
-                    String response = client.execute(post, responseHandler);
-                    Log.d("HTTP response", response);
-                    JSONArray results = new JSONArray(response);
-
-                    for (int i = 0; i < results.length(); ++i)
-                    {
-                        JSONArray result = results.getJSONArray(i);
-                        LatLng locationLatLng = new LatLng(result.getDouble(1), result.getDouble(2));
-                        mMap.addMarker(new MarkerOptions()
-                                .title(result.getString(0))
-                                .position(locationLatLng)
-                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
-                    }
-
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
+        final Button addLocationButton = (Button) findViewById(R.id.buttonAdd);
+        addLocationButton.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View view)
+            {
+                new LocationDetective().execute(locationEntry.getText().toString());
             }
         });
 
+        final Button deployButton = (Button) findViewById(R.id.buttonDeploy);
+        deployButton.setOnClickListener(new View.OnClickListener()
+        {
+            public void onClick(View v)
+            {
+                new AlgorithmExecutor().execute();
+            }
+        });
     }
 
-    private void setUpMapIfNeeded() {
+    private void setUpMapIfNeeded()
+    {
         // Do a null check to confirm that we have not already instantiated the map.
-        if (mMap == null) {
+        if (mMap == null)
+        {
             mMap = ((MapFragment) getFragmentManager().findFragmentById(R.id.map))
                     .getMap();
         }
@@ -169,11 +105,157 @@ public class MapActivity extends Activity {
         // Get the name of the best provider
         String provider = locationManager.getBestProvider(criteria, true);
 
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+        {
+            // TODO: Consider calling
+            //    public void requestPermissions(@NonNull String[] permissions, int requestCode)
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for Activity#requestPermissions for more details.
+            return;
+        }
         Location myLocation = locationManager.getLastKnownLocation(provider);
 
-        LatLng myLatLng = new LatLng(myLocation.getLatitude(), myLocation.getLongitude());
+        if (null != myLocation)
+        {
+            LatLng myLatLng = new LatLng(myLocation.getLatitude(), myLocation.getLongitude());
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(myLatLng, 13));
+        }
 
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(myLatLng, 13));
+        LatLng londonLatitudeLongitude = new LatLng(51.507351, -0.127758);
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(londonLatitudeLongitude, 9));
+
+    }
+
+    private class LocationDetective extends AsyncTask<String, Void, Void>
+    {
+        Address address;
+
+        @Override
+        protected Void doInBackground(String... strings)
+        {
+            if (strings.length >= 1)
+            {
+                String addressString = strings[0];
+
+                if (null != addressString && !addressString.isEmpty())
+                {
+                    try
+                    {
+                        address = geocoder.getFromLocationName(addressString, 1).get(0);
+                    } catch (IOException e)
+                    {
+                        e.printStackTrace();
+                    }
+
+                    JSONArray jsonLocationLatLong = new JSONArray();
+
+                    try
+                    {
+                        if (null != address)
+                        {
+                            jsonLocationLatLong.put(address.getLatitude());
+                            jsonLocationLatLong.put(address.getLongitude());
+
+                            synchronized (syncLock)
+                            {
+                                jsonLocations.put(jsonLocationLatLong);
+                            }
+                        }
+                    } catch (JSONException e)
+                    {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            return null;
+        }
+
+        protected void onPostExecute(Void result)
+        {
+            if (null != address)
+            {
+                mMap.addMarker(new MarkerOptions()
+                        .title(address.getPostalCode())
+                        .position(new LatLng(address.getLatitude(), address.getLongitude())));
+                locationEntry.getText().clear();
+            }
+        }
+    }
+
+    private class AlgorithmExecutor extends AsyncTask<Void, Void, Void>
+    {
+        String response;
+
+        @Override
+        protected Void doInBackground(Void... voids)
+        {
+            // Perform action on click
+
+            // Convert to HttpURLConnection
+            HttpClient client = new DefaultHttpClient();
+            HttpPost post = new HttpPost("http://halfway.duckdns.org:9001/api/v1/lookup");
+
+            try
+            {
+                post.setEntity(new StringEntity(jsonLocations.toString()));
+
+            } catch (UnsupportedEncodingException e)
+            {
+                e.printStackTrace();
+            }
+
+            // sets a request header so the page receiving the request
+            // will know what to do with it
+            post.setHeader("Accept", "application/json");
+            post.setHeader("Content-type", "application/json");
+
+            //Handles what is returned from the page
+            ResponseHandler<String> responseHandler = new BasicResponseHandler();
+
+            try
+            {
+                response = client.execute(post, responseHandler);
+                Log.d("HTTP response", response);
+            } catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+
+            return null;
+        }
+
+        protected void onPostExecute(Void nothing)
+        {
+            JSONArray results;
+            try
+            {
+                if (null != response)
+                {
+                    results = new JSONArray(response);
+                    for (int i = 0; i < results.length() || i < 1; ++i)
+                    {
+                        JSONArray result = results.getJSONArray(i);
+                        LatLng locationLatLng = new LatLng(result.getDouble(1), result.getDouble(2));
+
+                        if (null != resultLocation)
+                        {
+                            resultLocation.remove();
+                        }
+
+                        resultLocation = mMap.addMarker(new MarkerOptions()
+                                .title(result.getString(0))
+                                .position(locationLatLng)
+                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
+                    }
+                }
+            } catch (JSONException e)
+            {
+                e.printStackTrace();
+            }
+        }
     }
 }
 
