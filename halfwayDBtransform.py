@@ -40,13 +40,13 @@ stops = []
 with conn:
     cur = conn.cursor()   
     # A bit of DB house keeping
-    cur.execute("""DROP TABLE IF EXISTS fullRouteWeights""")
-    cur.execute("""CREATE TABLE fullRouteWeights(_id INTEGER PRIMARY KEY, STATIONA TEXT, STATIONB TEXT, WEIGHT REAL)""")
+    cur.execute("""DROP TABLE IF EXISTS FULLROUTES""")
+    cur.execute("""CREATE TABLE FULLROUTES(_id INTEGER PRIMARY KEY, STATIONA TEXT, STATIONB TEXT, WEIGHT REAL)""")
 
-    cur.execute("""SELECT s.code FROM stations AS s""")
+    cur.execute("""SELECT S.CODE FROM STATIONS AS S""")
     stops = cur.fetchall()
 
-    cur.execute("""SELECT r.stationa, r.stationb, r.unimpeded, r.line FROM routes AS r""")
+    cur.execute("""SELECT R.STATIONA, R.STATIONB, R.UNIMPEDED, R.LINE FROM ROUTES AS R""")
     rows = cur.fetchall()
     
 ### 
@@ -131,7 +131,7 @@ for stopFrom in fullStops:
     
 print "Saving Routes..."
 with conn:
-    insStr = """INSERT INTO fullRouteWeights (STATIONA, STATIONB, WEIGHT) values (?, ?, ?) """
+    insStr = """INSERT INTO FULLROUTES (STATIONA, STATIONB, WEIGHT) VALUES (?, ?, ?) """
 
     for stations, weightBB in fromToDict.iteritems():
         print stations[0], stations[1], weightBB
