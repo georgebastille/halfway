@@ -40,7 +40,7 @@ def lookup(entryPoints):
     # String should look something like "SELECT STATIONB, WEIGHT FROM
     # fullRouteWeights WHERE STATIONA = 'VIC' OR STATIONA = 'SBC' OR
     # STATIONA = 'MGT' ORDER BY STATIONB"
-    selectionString = "SELECT STATIONB, WEIGHT FROM fullRouteWeights WHERE "
+    selectionString = "SELECT STATIONB, WEIGHT FROM FULLROUTES WHERE "
     for station in entryPoints:
         selectionString += "STATIONA = '"
         selectionString += station
