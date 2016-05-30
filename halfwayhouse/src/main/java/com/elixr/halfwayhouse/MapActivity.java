@@ -28,8 +28,20 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import org.json.JSONArray;
 import org.json.JSONException;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -125,7 +137,7 @@ public class MapActivity extends Activity
         }
 
         LatLng londonLatitudeLongitude = new LatLng(51.507351, -0.127758);
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(londonLatitudeLongitude, 9));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(londonLatitudeLongitude, 12));
 
     }
 
@@ -194,34 +206,39 @@ public class MapActivity extends Activity
         {
             // Perform action on click
 
-            // Convert to HttpURLConnection
-            HttpClient client = new DefaultHttpClient();
-            HttpPost post = new HttpPost("http://halfway.duckdns.org:9001/api/v1/lookup");
-
+            HttpURLConnection connection = null;
             try
             {
-                post.setEntity(new StringEntity(jsonLocations.toString()));
 
-            } catch (UnsupportedEncodingException e)
-            {
-                e.printStackTrace();
-            }
+                URL url = new URL("http://halfway.duckdns.org:9000/api/v1/lookup");
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setDoOutput(true);
+                connection.setRequestProperty("Content-type", "application/json");
 
-            // sets a request header so the page receiving the request
-            // will know what to do with it
-            post.setHeader("Accept", "application/json");
-            post.setHeader("Content-type", "application/json");
+                OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream());
+                out.write(jsonLocations.toString());
+                out.close();
 
-            //Handles what is returned from the page
-            ResponseHandler<String> responseHandler = new BasicResponseHandler();
+                BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                String decodedString;
+                StringBuilder sb = new StringBuilder();
+                while ((decodedString = in.readLine()) != null) {
+                    sb.append(decodedString);
+                }
+                response = sb.toString();
 
-            try
-            {
-                response = client.execute(post, responseHandler);
-                Log.d("HTTP response", response);
+                in.close();
+
+
             } catch (IOException e)
             {
                 e.printStackTrace();
+            }
+            finally
+            {
+                assert connection != null;
+                connection.disconnect();
+
             }
 
             return null;
@@ -240,10 +257,10 @@ public class MapActivity extends Activity
                         JSONArray result = results.getJSONArray(i);
                         LatLng locationLatLng = new LatLng(result.getDouble(1), result.getDouble(2));
 
-                        if (null != resultLocation)
-                        {
-                            resultLocation.remove();
-                        }
+//                        if (null != resultLocation)
+//                        {
+//                            resultLocation.remove();
+//                        }
 
                         resultLocation = mMap.addMarker(new MarkerOptions()
                                 .title(result.getString(0))
