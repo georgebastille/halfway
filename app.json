@@ -1,5 +1,8 @@
 {
   "expo": {
+    "packagerOpts": {
+        "assetExts": ["db"]
+    },
     "name": "Halfway: London",
     "slug": "halfway",
     "privacy": "public",
