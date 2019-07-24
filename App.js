@@ -1,5 +1,9 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { 
+    StyleSheet, 
+    Text, 
+    View 
+} from 'react-native';
 import { SQLite } from 'expo-sqlite';
 import * as FileSystem from 'expo-file-system';
 
@@ -35,18 +39,24 @@ function successCallback(result) {
   console.log('Done with the DB, for now...');
 };
 
-export default function App() {
-  // Load db from assets
-  console.log('Before loading DB');
-  FileSystem.downloadAsync(
-    Expo.Asset.fromModule(require('./assets/halfway.db')).uri,
-      `${FileSystem.documentDirectory}SQLite/halfway.db`
-  ).then(successCallback, error);
-  return (
-    <View style={styles.container}>
-      <Text>Monkey up App.js to start working on your app!</Text>
-    </View>
-  );
+export default class App extends React.Component {
+
+  componentDidMount() { 
+    // Load db from assets
+    console.log('Before loading DB');
+    FileSystem.downloadAsync(
+      Expo.Asset.fromModule(require('./assets/halfway.db')).uri,
+        `${FileSystem.documentDirectory}SQLite/halfway.db`
+    ).then(successCallback, error);
+  }
+
+  render() {
+    return (
+      <View style={styles.container}>
+        <Text>Monkey up App.js to start working on your app!</Text>
+      </View>
+    );
+  }
 }
 
 const styles = StyleSheet.create({
