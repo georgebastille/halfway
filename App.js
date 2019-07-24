@@ -11,11 +11,6 @@ import * as FileSystem from 'expo-file-system';
 let db = null
 
 
-function results(tx, resultSet) {
-  console.log('Printing Results:');
-  console.log(resultSet.rows.item(0));
-  console.log('Done printing Results');
-}
 
 function error(msg) {
   console.log('Error(msg):');
@@ -27,12 +22,6 @@ function errortx(tx, msg) {
   console.log(msg);
 }
 
-function dump_sql(tx) {
-  sql = 'SELECT * FROM LINES;';
-  console.log('Running DB Query');
-  tx.executeSql(sql, null, results, errortx);
-  console.log('Done executing SQL');
-}
 
 function successCallback(result) {
   console.log('About to open db');
@@ -40,13 +29,31 @@ function successCallback(result) {
   console.log('DB opened');
 };
 
-function queryDB() {
-  console.log('About to queryDB');
-  db.transaction(dump_sql, error, null);
-  console.log('Done with the DB, for now...');
-}
 
 export default class App extends React.Component {
+  state = {
+    textLabelText: 'Press Me!'
+  };
+
+  _queryDB() {
+    console.log(db);
+    console.log('About to queryDB');
+    db.transaction(
+      tx => {
+        sql = 'SELECT * FROM LINES;';
+        console.log('Running DB Query');
+        tx.executeSql(sql, null, 
+          (tx, resultSet) => {
+            console.log('Printing Results:');
+            console.log(resultSet.rows.item(0));
+            //this.setState.bind({textLabelText: resultSet.rows.item(0)});
+            console.log('Done printing Results');
+            console.log('And updating label');
+          }, errortx);
+        console.log('Done executing SQL');
+      } , error, null);
+    console.log('Done with the DB, for now...');
+  }
 
   componentDidMount() { 
     // Load db from assets
@@ -60,8 +67,8 @@ export default class App extends React.Component {
   render() {
     return (
       <View style={styles.container}>
-        <TouchableOpacity onPress={queryDB}>
-          <Text>Monkey up App.js to start working on your app!</Text>
+        <TouchableOpacity onPress={this._queryDB}>
+          <Text>{this.state.textLabelText}</Text>
         </TouchableOpacity>
       </View>
     );
