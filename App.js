@@ -2,8 +2,7 @@ import React from 'react';
 import { 
   StyleSheet, 
   Text, 
-  View,
-  TouchableOpacity
+  View
 } from 'react-native';
 import { SQLite } from 'expo-sqlite';
 import * as FileSystem from 'expo-file-system';
@@ -22,33 +21,34 @@ function errortx(tx, msg) {
   console.log(msg);
 }
 
-
 function successCallback(result) {
   console.log('About to open db');
   db = SQLite.openDatabase('halfway.db');
   console.log('DB opened');
 };
 
-
 export default class App extends React.Component {
-  state = {
-    textLabelText: 'Press Me!'
-  };
+  constructor(props) {
+    super(props);
+    this.state = {
+      textLabelText: 'Press Me!'
+    };
+    // https://stackoverflow.com/questions/39705002/react-this2-setstate-is-not-a-function
+    this._queryDB = this._queryDB.bind(this);
+  }
 
   _queryDB() {
-    console.log(db);
     console.log('About to queryDB');
-    db.transaction(
-      tx => {
+    console.log(this);
+    db.transaction( tx => {
         sql = 'SELECT * FROM LINES;';
         console.log('Running DB Query');
         tx.executeSql(sql, null, 
-          (tx, resultSet) => {
+          (_, resultSet) => {
             console.log('Printing Results:');
             console.log(resultSet.rows.item(0));
-            //this.setState.bind({textLabelText: resultSet.rows.item(0)});
+            this.setState({textLabelText: resultSet.rows.item(0)['NAME']});
             console.log('Done printing Results');
-            console.log('And updating label');
           }, errortx);
         console.log('Done executing SQL');
       } , error, null);
@@ -67,9 +67,9 @@ export default class App extends React.Component {
   render() {
     return (
       <View style={styles.container}>
-        <TouchableOpacity onPress={this._queryDB}>
-          <Text>{this.state.textLabelText}</Text>
-        </TouchableOpacity>
+        <Text onPress={this._queryDB}>
+          {this.state.textLabelText}
+        </Text>
       </View>
     );
   }
