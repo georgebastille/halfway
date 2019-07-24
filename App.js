@@ -1,11 +1,14 @@
 import React from 'react';
 import { 
-    StyleSheet, 
-    Text, 
-    View 
+  StyleSheet, 
+  Text, 
+  View,
+  TouchableOpacity
 } from 'react-native';
 import { SQLite } from 'expo-sqlite';
 import * as FileSystem from 'expo-file-system';
+
+let db = null
 
 
 function results(tx, resultSet) {
@@ -33,11 +36,15 @@ function dump_sql(tx) {
 
 function successCallback(result) {
   console.log('About to open db');
-  const db = SQLite.openDatabase('halfway.db');
-  console.log('Hello World!');
+  db = SQLite.openDatabase('halfway.db');
+  console.log('DB opened');
+};
+
+function queryDB() {
+  console.log('About to queryDB');
   db.transaction(dump_sql, error, null);
   console.log('Done with the DB, for now...');
-};
+}
 
 export default class App extends React.Component {
 
@@ -53,7 +60,9 @@ export default class App extends React.Component {
   render() {
     return (
       <View style={styles.container}>
-        <Text>Monkey up App.js to start working on your app!</Text>
+        <TouchableOpacity onPress={queryDB}>
+          <Text>Monkey up App.js to start working on your app!</Text>
+        </TouchableOpacity>
       </View>
     );
   }
