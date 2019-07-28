@@ -34,12 +34,12 @@ export default class App extends React.Component {
       textLabelText: 'Press Me!'
     };
     // https://stackoverflow.com/questions/39705002/react-this2-setstate-is-not-a-function
-    this._queryDB = this._queryDB.bind(this);
+    //this._queryDB = this._queryDB.bind(this);
   }
 
   _queryDB() {
     console.log('About to queryDB');
-    console.log(this);
+    //console.log(this);
     db.transaction( tx => {
         sql = 'SELECT * FROM LINES;';
         console.log('Running DB Query');
@@ -63,11 +63,17 @@ export default class App extends React.Component {
         `${FileSystem.documentDirectory}SQLite/halfway.db`
     ).then(successCallback, error);
   }
+  // Subtle difference between these two onPress calls.
+  // Arrow functions keep the 'this' reference of the parent
+  // wheras using a function variable uses the this of the 
+  // 'Text' object.
+  //<Text onPress={() => this._queryDB()}>
+  //<Text onPress={this._queryDB}>
 
   render() {
     return (
       <View style={styles.container}>
-        <Text onPress={this._queryDB}>
+        <Text onPress={() => this._queryDB()}> 
           {this.state.textLabelText}
         </Text>
       </View>
