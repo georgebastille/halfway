@@ -24,19 +24,20 @@ const db = new sqlite3.Database(
   console.log('Connected to HalfwayDB');
 });
 
-const from = 'ANG';
+const from = ['ANG', 'LSQ'];
 const destinations = new DefaultDict(Array);
+const stationAs = ' stationa = ? OR'.repeat(from.length).slice(0, -2);
+
+let sql = `SELECT stationb, weight FROM fullroutes WHERE ${stationAs}`;
+console.log(sql);
 
 db.serialize(() => {
-  db.all(`SELECT stationb, weight FROM fullroutes 
-          WHERE stationa = ? ORDER BY stationb LIMIT 10`, [from],
+  db.all(sql, from,
     (err, rows) => {
       if (err) {
         console.err(err.message);
       }
-      //console.log(rows);
       rows.forEach((value) => {
-        //console.log('Name: ' + value.STATIONB);
         destinations[value.STATIONB].push(value.WEIGHT);
       });
       for (let destination in destinations) {
