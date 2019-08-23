@@ -93,7 +93,10 @@ export default class App extends React.Component {
   render() {
     return (
       <View style={styles.container}>
-        <Picker style={{height: 50, width:200}}>
+        <Picker
+          style={{height: 50, width:200}}
+          selectedValue={this.state.selectedLine}
+          onValueChange={(value, _) => this.setState({selectedLine: value})}>
           {this.state.lines.map((line, id) => 
             <Picker.Item label={line.NAME} value={line.ID} key={id}/>
           )}
