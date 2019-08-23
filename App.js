@@ -2,7 +2,8 @@ import React from 'react';
 import { 
   StyleSheet, 
   Text, 
-  View
+  View,
+  Picker
 } from 'react-native';
 import { SQLite } from 'expo-sqlite';
 import * as FileSystem from 'expo-file-system';
@@ -11,13 +12,21 @@ import * as FileSystem from 'expo-file-system';
 class HalfwayDB {
   constructor() {
     console.log('Loading Halfway DB...');
+    FileSystem.deleteAsync(
+      `${FileSystem.documentDirectory}SQLite/`
+    ).then(() => {
+    FileSystem.makeDirectoryAsync(
+      `${FileSystem.documentDirectory}SQLite/`
+    )}).then(() => {
     FileSystem.downloadAsync(
       Expo.Asset.fromModule(require('./assets/halfway.db')).uri,
-        `${FileSystem.documentDirectory}SQLite/halfway.db`
-    ).then(() => { 
+      `${FileSystem.documentDirectory}SQLite/halfway.db`
+    )}).then(() => { 
+      console.log('...about to open database...');
       this.db = SQLite.openDatabase('halfway.db');
       console.log('...done loading Halfway DB');
-    }, error);
+    }, error
+    ).catch(error);
   }
 
   getLines(success) {
@@ -38,12 +47,12 @@ class HalfwayDB {
 
 function error(msg) {
   console.log('Error(msg):');
-  console.log(msg);
+  console.error(msg);
 }
 
 function errortx(tx, msg) {
   console.log('Error(msg, tx):');
-  console.log(msg);
+  console.error(msg);
 }
 
 export default class App extends React.Component {
@@ -51,14 +60,27 @@ export default class App extends React.Component {
     super(props);
     this.halfwayDB = new HalfwayDB();
     this.state = {
-      textLabelText: 'Press Me!'
+      textLabelText: 'Press Me!',
+      lines: [],
+
     };
     // https://stackoverflow.com/questions/39705002/react-this2-setstate-is-not-a-function
     this.updateLabel = this.updateLabel.bind(this);
   }
 
   updateLabel(resultSet) {
-    this.setState({textLabelText: resultSet.rows.item(0)['NAME']});
+    let lines = [];
+    for (let i = 0; i < resultSet.rows.length; i++) {
+      let row = resultSet.rows.item(i);
+      lines.push({
+        NAME: row.NAME,
+        ID: row.ID,
+      });
+    }
+    this.setState({
+      textLabelText: resultSet.rows.item(0)['NAME'],
+      lines: lines,
+    });
   }
 
   // Subtle difference between these two onPress calls.
@@ -71,6 +93,11 @@ export default class App extends React.Component {
   render() {
     return (
       <View style={styles.container}>
+        <Picker style={{height: 50, width:200}}>
+          {this.state.lines.map((line, id) => 
+            <Picker.Item label={line.NAME} value={line.ID} key={id}/>
+          )}
+        </Picker>
         <Text onPress={() => this.halfwayDB.getLines(this.updateLabel)}> 
           {this.state.textLabelText}
         </Text>
