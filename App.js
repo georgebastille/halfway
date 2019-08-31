@@ -7,26 +7,14 @@ import {
 } from 'react-native';
 import { SQLite } from 'expo-sqlite';
 import * as FileSystem from 'expo-file-system';
+import { AppLoading } from 'expo';
 
 
 class HalfwayDB {
   constructor() {
-    console.log('Loading Halfway DB...');
-    FileSystem.deleteAsync(
-      `${FileSystem.documentDirectory}SQLite/`
-    ).then(() => {
-    FileSystem.makeDirectoryAsync(
-      `${FileSystem.documentDirectory}SQLite/`
-    )}).then(() => {
-    FileSystem.downloadAsync(
-      Expo.Asset.fromModule(require('./assets/halfway.db')).uri,
-      `${FileSystem.documentDirectory}SQLite/halfway.db`
-    )}).then(() => { 
-      console.log('...about to open database...');
-      this.db = SQLite.openDatabase('halfway.db');
-      console.log('...done loading Halfway DB');
-    }, error
-    ).catch(error);
+    console.log('...about to open database...');
+    this.db = SQLite.openDatabase('halfway.db');
+    console.log('...done opening Halfway DB');
   }
 
   getLines(success) {
@@ -60,6 +48,7 @@ export default class App extends React.Component {
     super(props);
     this.halfwayDB = new HalfwayDB();
     this.state = {
+      isReady: false,
       textLabelText: 'Press Me!',
       lines: [],
 
@@ -83,6 +72,22 @@ export default class App extends React.Component {
     });
   }
 
+  _copyDatabaseFromAssets() {
+    console.log('Loading Halfway DB...');
+    return FileSystem.deleteAsync(
+      `${FileSystem.documentDirectory}SQLite/`,
+      {idempotent: true}
+    ).then(() => {
+    FileSystem.makeDirectoryAsync(
+      `${FileSystem.documentDirectory}SQLite/`
+    )}).then(() => {
+    FileSystem.downloadAsync(
+      Expo.Asset.fromModule(require('./assets/halfway.db')).uri,
+      `${FileSystem.documentDirectory}SQLite/halfway.db`
+    )})
+  }
+
+
   // Subtle difference between these two onPress calls.
   // Arrow functions keep the 'this' reference of the parent
   // wheras using a function variable uses the this of the 
@@ -91,6 +96,15 @@ export default class App extends React.Component {
   //<Text onPress={this._queryDB}>
 
   render() {
+    if (!this.state.isReady) {
+      return (
+        <AppLoading
+          startAsync={this._copyDatabaseFromAssets}
+          onFinish={() => this.setState({ isReady:true })}
+          onError={console.warn}
+        />
+      );
+    }
     return (
       <View style={styles.container}>
         <Picker
