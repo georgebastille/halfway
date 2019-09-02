@@ -17,6 +17,7 @@ class HalfwayDB {
     console.log('...done opening Halfway DB');
   }
 
+
   getLines(success) {
     console.log('About to queryDB');
     this.db.transaction( tx => {
@@ -46,7 +47,6 @@ function errortx(tx, msg) {
 export default class App extends React.Component {
   constructor(props) {
     super(props);
-    this.halfwayDB = new HalfwayDB();
     this.state = {
       isReady: false,
       textLabelText: 'Press Me!',
@@ -55,6 +55,7 @@ export default class App extends React.Component {
     };
     // https://stackoverflow.com/questions/39705002/react-this2-setstate-is-not-a-function
     this.updateLabel = this.updateLabel.bind(this);
+    this._copyDatabaseFromAssets = this._copyDatabaseFromAssets.bind(this);
   }
 
   updateLabel(resultSet) {
@@ -84,7 +85,9 @@ export default class App extends React.Component {
     FileSystem.downloadAsync(
       Expo.Asset.fromModule(require('./assets/halfway.db')).uri,
       `${FileSystem.documentDirectory}SQLite/halfway.db`
-    )})
+    )}).then(() => {
+        this.halfwayDB = new HalfwayDB();
+    })
   }
 
 
