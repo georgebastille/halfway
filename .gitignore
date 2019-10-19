@@ -9,3 +9,11 @@ npm-debug.*
 web-build/
 web-report/
 *.swp
+*.iml
+.gradle
+/local.properties
+/.idea/workspace.xml
+/.idea/libraries
+.DS_Store
+/build
+/captures
