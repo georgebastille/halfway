@@ -1,3 +1,0 @@
-curl -vv -X POST 192.168.1.79:9000/api/v1/lookup -H 'Content-Type: application/json' -d '["CFS", "RMD", "UXB"]'
-
-curl -vv -X POST 192.168.1.79:9000/api/v1/lookup -H 'Content-Type: application/json' -d '[[51.6520245, -0.149902259], [51.46323292, -0.301724741], [51.54645456, -0.477087141]]'
