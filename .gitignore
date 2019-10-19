@@ -17,3 +17,7 @@ web-report/
 .DS_Store
 /build
 /captures
+node_modules
+*.db
+package-lock.json
+*.swp
