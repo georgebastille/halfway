@@ -1,3 +1,4 @@
+import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { 
   StyleSheet, 
@@ -5,9 +6,10 @@ import {
   View,
   Picker
 } from 'react-native';
-import { SQLite } from 'expo-sqlite';
+import * as SQLite from 'expo-sqlite';
 import * as FileSystem from 'expo-file-system';
-import { AppLoading } from 'expo';
+import AppLoading from 'expo-app-loading';
+import { Asset } from 'expo-asset';
 
 
 class HalfwayDB {
@@ -83,7 +85,7 @@ export default class App extends React.Component {
       `${FileSystem.documentDirectory}SQLite/`
     )}).then(() => {
     FileSystem.downloadAsync(
-      Expo.Asset.fromModule(require('./assets/halfway.db')).uri,
+      Asset.fromModule(require('./assets/halfway.db')).uri,
       `${FileSystem.documentDirectory}SQLite/halfway.db`
     )}).then(() => {
         this.halfwayDB = new HalfwayDB();
