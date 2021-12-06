@@ -13,9 +13,23 @@ import { Asset } from 'expo-asset';
 
 
 class HalfwayDB {
-  constructor() {
+  constructor(callback) {
     console.log('...about to open database...');
-    this.db = SQLite.openDatabase('halfway.db');
+    this.db = SQLite.openDatabase('halfway.db', "", "", "", db => {
+      console.log("Crazy Callbacks");
+      console.log('About to queryDB');
+      db.transaction( tx => {
+        sql = 'SELECT * FROM LINES;';
+        console.log('Running DB Query');
+        tx.executeSql(sql, null, (_, resultSet) => {
+          console.log('Printing Results:');
+          console.log(resultSet.rows.item(0));
+          console.log('Done printing Results');
+          callback(resultSet);
+        }, errortx);
+        console.log('Done executing SQL');
+      }, error, null);
+    });
     console.log('...done opening Halfway DB');
   }
 
@@ -57,10 +71,10 @@ export default class App extends React.Component {
     };
     // https://stackoverflow.com/questions/39705002/react-this2-setstate-is-not-a-function
     this.updateLabel = this.updateLabel.bind(this);
-    this._copyDatabaseFromAssets = this._copyDatabaseFromAssets.bind(this);
+    this.initialise = this.initialise.bind(this);
   }
 
-  updateLabel(resultSet) {
+  saveLines(resultSet) {
     let lines = [];
     for (let i = 0; i < resultSet.rows.length; i++) {
       let row = resultSet.rows.item(i);
@@ -70,12 +84,17 @@ export default class App extends React.Component {
       });
     }
     this.setState({
-      textLabelText: resultSet.rows.item(0)['NAME'],
       lines: lines,
     });
   }
 
-  _copyDatabaseFromAssets() {
+  updateLabel(resultSet) {
+    this.setState({
+      textLabelText: resultSet.rows.item(0)['NAME'],
+    });
+  }
+
+  initialise() {
     console.log('Loading Halfway DB...');
     return FileSystem.deleteAsync(
       `${FileSystem.documentDirectory}SQLite/`,
@@ -88,7 +107,7 @@ export default class App extends React.Component {
       Asset.fromModule(require('./assets/halfway.db')).uri,
       `${FileSystem.documentDirectory}SQLite/halfway.db`
     )}).then(() => {
-        this.halfwayDB = new HalfwayDB();
+       this.halfwayDB = new HalfwayDB(this.saveLines);
     })
   }
 
@@ -104,7 +123,7 @@ export default class App extends React.Component {
     if (!this.state.isReady) {
       return (
         <AppLoading
-          startAsync={this._copyDatabaseFromAssets}
+          startAsync={this.initialise}
           onFinish={() => this.setState({ isReady:true })}
           onError={console.warn}
         />
@@ -120,7 +139,7 @@ export default class App extends React.Component {
             <Picker.Item label={line.NAME} value={line.ID} key={id}/>
           )}
         </Picker>
-        <Text onPress={() => this.halfwayDB.getLines(this.updateLabel)}> 
+        <Text>
           {this.state.textLabelText}
         </Text>
       </View>

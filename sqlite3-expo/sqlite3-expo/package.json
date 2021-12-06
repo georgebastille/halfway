@@ -1,5 +1,5 @@
 {
-  "name": "expo-client-",
+  "name": "sqlite-expo",
   "version": "1.0.0",
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
@@ -10,16 +10,11 @@
     "eject": "expo eject"
   },
   "dependencies": {
-    "expo": "^43.0.3",
-    "expo-app-loading": "~1.2.1",
-    "expo-asset": "~8.4.3",
-    "expo-file-system": "~13.0.3",
-    "expo-sqlite": "~10.0.3",
+    "expo": "~43.0.2",
     "expo-status-bar": "~1.1.0",
     "react": "17.0.1",
     "react-dom": "17.0.1",
-    "react-native": "^0.64.3",
-    "react-native-autocomplete-dropdown": "^1.1.5",
+    "react-native": "0.64.3",
     "react-native-web": "0.17.1"
   },
   "devDependencies": {
