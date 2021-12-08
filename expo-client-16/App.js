@@ -4,8 +4,9 @@ import {
   StyleSheet, 
   Text, 
   View,
-  Picker
 } from 'react-native';
+import {Picker} from '@react-native-picker/picker';
+
 import * as SQLite from 'expo-sqlite';
 import AppLoading from 'expo-app-loading';
 import {database} from './components/database'
