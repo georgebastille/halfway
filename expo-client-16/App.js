@@ -7,48 +7,9 @@ import {
   Picker
 } from 'react-native';
 import * as SQLite from 'expo-sqlite';
-import * as FileSystem from 'expo-file-system';
 import AppLoading from 'expo-app-loading';
-import { Asset } from 'expo-asset';
+import {database} from './components/database'
 
-
-class HalfwayDB {
-  constructor(callback) {
-    console.log('...about to open database...');
-    this.db = SQLite.openDatabase('halfway.db', "", "", "", db => {
-      console.log("Crazy Callbacks");
-      console.log('About to queryDB');
-      db.transaction( tx => {
-        sql = 'SELECT * FROM LINES;';
-        console.log('Running DB Query');
-        tx.executeSql(sql, null, (_, resultSet) => {
-          console.log('Printing Results:');
-          console.log(resultSet.rows.item(0));
-          console.log('Done printing Results');
-          callback(resultSet);
-        }, errortx);
-        console.log('Done executing SQL');
-      }, error, null);
-    });
-    console.log('...done opening Halfway DB');
-  }
-
-
-  getLines(success) {
-    console.log('About to queryDB');
-    this.db.transaction( tx => {
-      sql = 'SELECT * FROM LINES;';
-      console.log('Running DB Query');
-      tx.executeSql(sql, null, (_, resultSet) => {
-        console.log('Printing Results:');
-        console.log(resultSet.rows.item(0));
-        console.log('Done printing Results');
-        success(resultSet);
-      }, errortx);
-      console.log('Done executing SQL');
-    }, error, null);
-  }
-}
 
 function error(msg) {
   console.log('Error(msg):');
@@ -67,11 +28,11 @@ export default class App extends React.Component {
       isReady: false,
       textLabelText: 'Press Me!',
       lines: [],
+  };
 
-    };
-    // https://stackoverflow.com/questions/39705002/react-this2-setstate-is-not-a-function
-    this.updateLabel = this.updateLabel.bind(this);
-    this.initialise = this.initialise.bind(this);
+  // https://stackoverflow.com/questions/39705002/react-this2-setstate-is-not-a-function
+  this.updateLabel = this.updateLabel.bind(this);
+  this.initialise = this.initialise.bind(this);
   }
 
   saveLines(resultSet) {
@@ -94,21 +55,12 @@ export default class App extends React.Component {
     });
   }
 
-  initialise() {
+  async initialise() {
     console.log('Loading Halfway DB...');
-    return FileSystem.deleteAsync(
-      `${FileSystem.documentDirectory}SQLite/`,
-      {idempotent: true}
-    ).then(() => {
-    FileSystem.makeDirectoryAsync(
-      `${FileSystem.documentDirectory}SQLite/`
-    )}).then(() => {
-    FileSystem.downloadAsync(
-      Asset.fromModule(require('./assets/halfway.db')).uri,
-      `${FileSystem.documentDirectory}SQLite/halfway.db`
-    )}).then(() => {
-       this.halfwayDB = new HalfwayDB(this.saveLines);
-    })
+    await database.loadDatabase();
+    lines = await database.getLinesAsync()
+    console.log(lines);
+    console.log('done Loading Halfway DB');
   }
 
 
