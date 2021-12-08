@@ -29,6 +29,8 @@ export default class App extends React.Component {
       isReady: false,
       textLabelText: 'Press Me!',
       lines: [],
+      stations: [],
+      selectedStation: null
   };
 
   // https://stackoverflow.com/questions/39705002/react-this2-setstate-is-not-a-function
@@ -50,6 +52,20 @@ export default class App extends React.Component {
     });
   }
 
+  saveStations(resultSet) {
+    let stations = [];
+    for (let i = 0; i < resultSet.rows.length; i++) {
+      let row = resultSet.rows.item(i);
+      stations.push({
+        NAME: row.NAME,
+        ID: row.CODE,
+      });
+    }
+    this.setState({
+      stations: stations
+    });
+  }
+
   updateLabel(resultSet) {
     this.setState({
       textLabelText: resultSet.rows.item(0)['NAME'],
@@ -59,8 +75,7 @@ export default class App extends React.Component {
   async initialise() {
     console.log('Loading Halfway DB...');
     await database.loadDatabase();
-    lines = await database.getLinesAsync()
-    console.log(lines);
+    this.saveStations(await database.getStationsAsync());
     console.log('done Loading Halfway DB');
   }
 
@@ -86,9 +101,9 @@ export default class App extends React.Component {
       <View style={styles.container}>
         <Picker
           style={{height: 50, width:200}}
-          selectedValue={this.state.selectedLine}
-          onValueChange={(value, _) => this.setState({selectedLine: value})}>
-          {this.state.lines.map((line, id) => 
+          selectedValue={this.state.selectedStation}
+          onValueChange={(value, _) => this.setState({selectedStation: value})}>
+          {this.state.stations.map((line, id) => 
             <Picker.Item label={line.NAME} value={line.ID} key={id}/>
           )}
         </Picker>

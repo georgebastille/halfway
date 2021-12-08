@@ -26,7 +26,7 @@ async function loadDatabase() {
 }
 
 
-const getLinesAsync = async () => {
+const getStationsAsync = async () => {
   return new Promise((resolve, reject) => {
     if (db == null) {
       console.log("Database is null");
@@ -35,10 +35,10 @@ const getLinesAsync = async () => {
     }
     db.transaction(tx => {
       tx.executeSql(
-        'SELECT * FROM LINES;',
+        'SELECT * FROM STATIONS;',
         [],
         (_, result) => { resolve(result) },
-        (_, error) => { console.log("Error getting Lines from DB"); reject(error)}
+        (_, error) => { console.log("Error getting Stations from DB"); reject(error)}
       )
     })
   })
@@ -60,6 +60,6 @@ const getLines = (setLinesFunc) => {
   }, error, null);
 }
 export const database = {
-  getLinesAsync,
+  getStationsAsync,
   loadDatabase
 }
