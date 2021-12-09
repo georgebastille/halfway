@@ -27,10 +27,13 @@ export default class App extends React.Component {
     super(props);
     this.state = {
       isReady: false,
-      textLabelText: 'Press Me!',
+      fairestStationLabel: 'Meet at: KINGS CROSS',
       lines: [],
       stations: [],
-      selectedStation: null
+      selectedStation1: null,
+      selectedStation2: null,
+      selectedStation3: null,
+
   };
 
   // https://stackoverflow.com/questions/39705002/react-this2-setstate-is-not-a-function
@@ -68,7 +71,7 @@ export default class App extends React.Component {
 
   updateLabel(resultSet) {
     this.setState({
-      textLabelText: resultSet.rows.item(0)['NAME'],
+      fairestStationLabel: resultSet.rows.item(0)['NAME'],
     });
   }
 
@@ -77,6 +80,11 @@ export default class App extends React.Component {
     await database.loadDatabase();
     this.saveStations(await database.getStationsAsync());
     console.log('done Loading Halfway DB');
+  }
+
+  determineFairest(callback) {
+    callback("Richie Rules w00t");
+
   }
 
 
@@ -100,15 +108,46 @@ export default class App extends React.Component {
     return (
       <View style={styles.container}>
         <Picker
-          style={{height: 50, width:200}}
-          selectedValue={this.state.selectedStation}
-          onValueChange={(value, _) => this.setState({selectedStation: value})}>
+          style={{height: 50, width:300}}
+          selectedValue={this.state.selectedStation1}
+          onValueChange={(value, _index) => {
+              console.log(value, _index); 
+              this.setState({selectedStation1: value})
+              this.determineFairest(fairest => this.state.fairestStationLabel = fairest)
+            }
+          }>
+          {this.state.stations.map((line, id) => 
+            <Picker.Item label={line.NAME} value={line.ID} key={id}/>
+          )}
+        </Picker>
+        <Picker
+          style={{height: 50, width:300}}
+          selectedValue={this.state.selectedStation2}
+          onValueChange={(value, _index) => {
+              console.log(value, _index); 
+              this.setState({selectedStation2: value})
+              this.determineFairest(fairest => this.state.fairestStationLabel = fairest)
+            }
+          }>
+          {this.state.stations.map((line, id) => 
+            <Picker.Item label={line.NAME} value={line.ID} key={id}/>
+          )}
+        </Picker>
+        <Picker
+          style={{height: 50, width:300}}
+          selectedValue={this.state.selectedStation3}
+          onValueChange={(value, _index) => {
+              console.log(value, _index); 
+              this.setState({selectedStation3: value})
+              this.determineFairest(fairest => this.state.fairestStationLabel = fairest)
+            }
+          }>
           {this.state.stations.map((line, id) => 
             <Picker.Item label={line.NAME} value={line.ID} key={id}/>
           )}
         </Picker>
         <Text>
-          {this.state.textLabelText}
+          {this.state.fairestStationLabel}
         </Text>
       </View>
     );
