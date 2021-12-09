@@ -59,7 +59,86 @@ const getLines = (setLinesFunc) => {
     console.log('Done executing SQL');
   }, error, null);
 }
+
+// https://stackoverflow.com/questions/19127650/defaultdict-equivalent-in-javascript
+class DefaultDict {
+  constructor(defaultInit) {
+    return new Proxy({}, {
+      get: (target, name) => name in target ?
+      target[name] :
+      (target[name] = typeof defaultInit === 'function' ?
+        new defaultInit().valueOf() :
+        defaultInit)
+    })
+  }
+}
+
+// https://derickbailey.com/2014/09/21/calculating-standard-deviation-with-array-map-and-array-reduce-in-javascript/
+function standardDeviation(values) {
+  var avg = average(values);
+
+  var squareDiffs = values.map(function(value){
+    var diff = value - avg;
+    var sqrDiff = diff * diff;
+    return sqrDiff;
+  });
+
+  var avgSquareDiff = average(squareDiffs);
+
+  var stdDev = Math.sqrt(avgSquareDiff);
+  return stdDev;
+}
+
+function average(data) {
+  var sumVal = sum(data);
+  var avg = sumVal / data.length;
+  return avg;
+}
+
+function sum(data) {
+  return data.reduce(function(sum, value){
+    return sum + value;
+  }, 0);
+}
+
+function processWeights(destinations) {
+  sortableDestinations = [];
+  for (let name in destinations) {
+    const places = destinations[name];
+    const sumVal = sum(places);
+    const stdDevVal = standardDeviation(places);
+
+    destinationObj = {name: name, sum: sumVal, stdDev: stdDevVal};
+    sortableDestinations.push(destinationObj);
+  }
+  return sortableDestinations;
+}
+
+function fairestStation(startingFrom, callback) {
+  const destinations = new DefaultDict(Array);
+  const stationAs = ' stationa = ? OR'.repeat(startingFrom.length).slice(0, -2);
+
+  let sql = `SELECT stationb, weight FROM fullroutes WHERE weight < 10000.0 AND (${stationAs})`;
+  db.transaction( 
+    tx => {
+      tx.executeSql(sql, startingFrom, (_, resultSet) => {
+        resultSet.rows.forEach((value) => {
+          destinations[value.STATIONB].push(value.WEIGHT);
+        });
+        let sortable = processWeights(destinations);
+        /*console.log("\nLowest Sum:");
+        printTop(sortable, sumCompare);
+        console.log("\nLowest Std Dev:");
+        printTop(sortable, stdDevCompare);*/
+        console.log(sortable);
+        console.log('Done printing Results');
+      }, errortx);
+    console.log('Done executing SQL');
+  }, error, null);
+}
+
 export const database = {
+  fairestStation,
   getStationsAsync,
   loadDatabase
 }

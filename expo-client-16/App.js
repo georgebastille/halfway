@@ -39,6 +39,7 @@ export default class App extends React.Component {
   // https://stackoverflow.com/questions/39705002/react-this2-setstate-is-not-a-function
   this.updateLabel = this.updateLabel.bind(this);
   this.initialise = this.initialise.bind(this);
+  this.determineFairest = this.determineFairest.bind(this);
   }
 
   saveLines(resultSet) {
@@ -83,7 +84,13 @@ export default class App extends React.Component {
   }
 
   determineFairest(callback) {
+    let startingFrom = [];
+    console.log(this.state.selectedStation1);
+    if (this.state.selectedStation1 != null) {
+      startingFrom.push(this.state.selectedStation1.ID);
+    }
     callback("Richie Rules w00t");
+
 
   }
 
@@ -112,8 +119,8 @@ export default class App extends React.Component {
           selectedValue={this.state.selectedStation1}
           onValueChange={(value, _index) => {
               console.log(value, _index); 
-              this.setState({selectedStation1: value})
-              this.determineFairest(fairest => this.state.fairestStationLabel = fairest)
+              this.setState({selectedStation1: value}, () => 
+                this.determineFairest(fairest => this.state.fairestStationLabel = fairest))
             }
           }>
           {this.state.stations.map((line, id) => 
