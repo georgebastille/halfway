@@ -7,18 +7,18 @@ import * as SQLite from "expo-sqlite"
 var db;
 
 async function loadDatabase() {
-  console.log("Method starting, Opening Database");
+  //console.log("Method starting, Opening Database");
   if (!(await FileSystem.getInfoAsync(FileSystem.documentDirectory + 'SQLite')).exists) {
     await FileSystem.makeDirectoryAsync(FileSystem.documentDirectory + 'SQLite');
   }
-  console.log("Copying db to app filesystem");
+  //console.log("Copying db to app filesystem");
   await FileSystem.downloadAsync(
     Asset.fromModule(require('../assets/halfway.db')).uri,
-    FileSystem.documentDirectory + 'SQLite/myDatabaseName.db'
+    FileSystem.documentDirectory + 'SQLite/myDatabaseName4.db'
   );
   console.log("Opening Database");
   return new Promise((resolve, _reject) => {
-    SQLite.openDatabase('myDatabaseName.db', "", "", "", 
+    SQLite.openDatabase('myDatabaseName4.db', "", "", "", 
       dbo => {db = dbo; console.log("Database opened"); resolve();}
     )
 
@@ -29,9 +29,9 @@ async function loadDatabase() {
 const getStationsAsync = async () => {
   return new Promise((resolve, reject) => {
     if (db == null) {
-      console.log("Database is null");
+      //console.log("Database is null");
     } else {
-      console.log("Database is not null, type = " + typeof(db));
+      //console.log("Database is not null, type = " + typeof(db));
     }
     db.transaction(tx => {
       tx.executeSql(
@@ -45,18 +45,18 @@ const getStationsAsync = async () => {
 }
 
 const getLines = (setLinesFunc) => {
-  console.log('About to queryDB');
+  //console.log('About to queryDB');
   db.transaction( 
     tx => {
       sql = 'SELECT * FROM LINES;';
-      console.log('Running DB Query');
+      //console.log('Running DB Query');
       tx.executeSql(sql, null, (_, resultSet) => {
-        console.log('Printing Results:');
-        console.log(resultSet.rows.item(0));
-        console.log('Done printing Results');
+        //console.log('Printing Results:');
+        //console.log(resultSet.rows.item(0));
+        //console.log('Done printing Results');
         success(resultSet);
       }, errortx);
-    console.log('Done executing SQL');
+    //console.log('Done executing SQL');
   }, error, null);
 }
 
@@ -114,27 +114,81 @@ function processWeights(destinations) {
   return sortableDestinations;
 }
 
+function sumCompare( a, b ) {
+  if ( a.sum < b.sum ) {
+    return -1;
+  } else if ( a.sum > b.sum ) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+function stdDevCompare( a, b ) {
+  if ( a.stdDev < b.stdDev ) {
+    return -1;
+  } else if ( a.stdDev > b.stdDev ) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+
+function stationNameFromCode(code, callback) {
+  const sql = `SELECT name FROM stations WHERE code = "${code}"`;
+  db.transaction(
+    tx => {
+      tx.executeSql(
+        sql, [],
+        (_, resultSet) => {
+          console.log("Name from code = ", resultSet.rows.item(0).NAME);
+          callback(resultSet.rows.item(0).NAME);
+        },
+        error => {}
+      )  
+    },
+    error => {}
+  );
+}
+
+function printTop(values, comparator, callback) {
+  values.sort(comparator);
+  var best = values[0];
+  console.log("Best = ", best);
+  stationNameFromCode(best.name, fullName => {
+    callback(`${fullName}: Total = ${best.sum}, Dev = ${best.stdDev}`);
+  });
+}
+
 function fairestStation(startingFrom, callback) {
+  console.log("inside fairest station db code");
   const destinations = new DefaultDict(Array);
   const stationAs = ' stationa = ? OR'.repeat(startingFrom.length).slice(0, -2);
 
   let sql = `SELECT stationb, weight FROM fullroutes WHERE weight < 10000.0 AND (${stationAs})`;
+  console.log(sql, startingFrom);
   db.transaction( 
     tx => {
-      tx.executeSql(sql, startingFrom, (_, resultSet) => {
-        resultSet.rows.forEach((value) => {
-          destinations[value.STATIONB].push(value.WEIGHT);
-        });
-        let sortable = processWeights(destinations);
-        /*console.log("\nLowest Sum:");
-        printTop(sortable, sumCompare);
-        console.log("\nLowest Std Dev:");
-        printTop(sortable, stdDevCompare);*/
-        console.log(sortable);
-        console.log('Done printing Results');
-      }, errortx);
-    console.log('Done executing SQL');
-  }, error, null);
+      tx.executeSql(
+          sql, 
+          startingFrom, 
+          (_, resultSet) => {
+            //console.log(resultSet);
+            for (let i = 0; i < resultSet.rows.length; i++) {
+              row = resultSet.rows.item(i);
+              destinations[row.STATIONB].push(row.WEIGHT);
+            }
+            let sortable = processWeights(destinations);
+            printTop(sortable, stdDevCompare, topStations => {
+              console.log('Top Stations = ', topStations); 
+              callback(topStations);
+            });
+          }, 
+          errortx => {console.log("Error with transaction:", errortx);})
+      //console.log('Done executing SQL');
+  }, error => {console.log("Error with transaction:", error);},
+    null);
 }
 
 export const database = {

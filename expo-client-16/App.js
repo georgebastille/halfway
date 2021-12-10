@@ -87,11 +87,16 @@ export default class App extends React.Component {
     let startingFrom = [];
     console.log(this.state.selectedStation1);
     if (this.state.selectedStation1 != null) {
-      startingFrom.push(this.state.selectedStation1.ID);
+      startingFrom.push(this.state.selectedStation1);
     }
-    callback("Richie Rules w00t");
-
-
+    if (this.state.selectedStation2 != null) {
+      startingFrom.push(this.state.selectedStation2);
+    }
+    if (this.state.selectedStation3 != null) {
+      startingFrom.push(this.state.selectedStation3);
+    }
+    console.log("Starting from = ", startingFrom);
+    database.fairestStation(startingFrom, callback);
   }
 
 
@@ -120,7 +125,7 @@ export default class App extends React.Component {
           onValueChange={(value, _index) => {
               console.log(value, _index); 
               this.setState({selectedStation1: value}, () => 
-                this.determineFairest(fairest => this.state.fairestStationLabel = fairest))
+                this.determineFairest(fairest => this.setState({fairestStationLabel: fairest})))
             }
           }>
           {this.state.stations.map((line, id) => 
@@ -132,8 +137,8 @@ export default class App extends React.Component {
           selectedValue={this.state.selectedStation2}
           onValueChange={(value, _index) => {
               console.log(value, _index); 
-              this.setState({selectedStation2: value})
-              this.determineFairest(fairest => this.state.fairestStationLabel = fairest)
+              this.setState({selectedStation2: value}, () => 
+                this.determineFairest(fairest => this.setState({fairestStationLabel: fairest})))
             }
           }>
           {this.state.stations.map((line, id) => 
@@ -145,8 +150,8 @@ export default class App extends React.Component {
           selectedValue={this.state.selectedStation3}
           onValueChange={(value, _index) => {
               console.log(value, _index); 
-              this.setState({selectedStation3: value})
-              this.determineFairest(fairest => this.state.fairestStationLabel = fairest)
+              this.setState({selectedStation3: value}, () => 
+                this.determineFairest(fairest => this.setState({fairestStationLabel: fairest})))
             }
           }>
           {this.state.stations.map((line, id) => 
