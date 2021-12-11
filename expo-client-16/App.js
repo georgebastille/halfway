@@ -54,6 +54,11 @@ export default class App extends React.Component {
         ID: row.CODE,
       });
     }
+    stations.sort((a, b) => {
+      if (a.NAME < b.NAME) { return -1; }
+      if (a.NAME > b.NAME) { return 1; }
+      return 0;
+    });
     this.setState({
       stations: stations
     });
