@@ -1,4 +1,3 @@
-import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { 
   StyleSheet, 
@@ -6,9 +5,8 @@ import {
   View,
 } from 'react-native';
 import {Picker} from '@react-native-picker/picker';
-
-import * as SQLite from 'expo-sqlite';
 import AppLoading from 'expo-app-loading';
+import { StatusBar } from 'expo-status-bar';
 import {database} from './components/database'
 
 
@@ -28,32 +26,22 @@ export default class App extends React.Component {
     this.state = {
       isReady: false,
       fairestStationLabel: 'Meet at: KINGS CROSS',
-      lines: [],
       stations: [],
       selectedStation1: null,
       selectedStation2: null,
       selectedStation3: null,
+    };
 
-  };
-
-  // https://stackoverflow.com/questions/39705002/react-this2-setstate-is-not-a-function
-  this.updateLabel = this.updateLabel.bind(this);
-  this.initialise = this.initialise.bind(this);
-  this.determineFairest = this.determineFairest.bind(this);
+    // https://stackoverflow.com/questions/39705002/react-this2-setstate-is-not-a-function
+    this.initialise = this.initialise.bind(this);
+    this.determineFairest = this.determineFairest.bind(this);
   }
 
-  saveLines(resultSet) {
-    let lines = [];
-    for (let i = 0; i < resultSet.rows.length; i++) {
-      let row = resultSet.rows.item(i);
-      lines.push({
-        NAME: row.NAME,
-        ID: row.ID,
-      });
-    }
-    this.setState({
-      lines: lines,
-    });
+  async initialise() {
+    console.log('Loading Halfway DB...');
+    await database.loadDatabase();
+    this.saveStations(await database.getStationsAsync());
+    console.log('done Loading Halfway DB');
   }
 
   saveStations(resultSet) {
@@ -70,22 +58,9 @@ export default class App extends React.Component {
     });
   }
 
-  updateLabel(resultSet) {
-    this.setState({
-      fairestStationLabel: resultSet.rows.item(0)['NAME'],
-    });
-  }
-
-  async initialise() {
-    console.log('Loading Halfway DB...');
-    await database.loadDatabase();
-    this.saveStations(await database.getStationsAsync());
-    console.log('done Loading Halfway DB');
-  }
 
   determineFairest(callback) {
     let startingFrom = [];
-    console.log(this.state.selectedStation1);
     if (this.state.selectedStation1 != null) {
       startingFrom.push(this.state.selectedStation1);
     }
@@ -95,7 +70,6 @@ export default class App extends React.Component {
     if (this.state.selectedStation3 != null) {
       startingFrom.push(this.state.selectedStation3);
     }
-    console.log("Starting from = ", startingFrom);
     database.fairestStation(startingFrom, callback);
   }
 
@@ -119,8 +93,9 @@ export default class App extends React.Component {
     }
     return (
       <View style={styles.container}>
+      <Text style={styles.titleText}>Halfway</Text>
         <Picker
-          style={{height: 50, width:300}}
+          style={styles.pickerStyle}
           selectedValue={this.state.selectedStation1}
           onValueChange={(value, _index) => {
               console.log(value, _index); 
@@ -133,7 +108,7 @@ export default class App extends React.Component {
           )}
         </Picker>
         <Picker
-          style={{height: 50, width:300}}
+          style={styles.pickerStyle}
           selectedValue={this.state.selectedStation2}
           onValueChange={(value, _index) => {
               console.log(value, _index); 
@@ -146,7 +121,7 @@ export default class App extends React.Component {
           )}
         </Picker>
         <Picker
-          style={{height: 50, width:300}}
+          style={styles.pickerStyle}
           selectedValue={this.state.selectedStation3}
           onValueChange={(value, _index) => {
               console.log(value, _index); 
@@ -158,7 +133,8 @@ export default class App extends React.Component {
             <Picker.Item label={line.NAME} value={line.ID} key={id}/>
           )}
         </Picker>
-        <Text>
+        <Text style={styles.paddingText}> </Text>
+        <Text style={styles.resultText}>
           {this.state.fairestStationLabel}
         </Text>
       </View>
@@ -173,4 +149,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  titleText: {
+    fontSize: 60,
+    fontWeight: 'bold',
+    height: 130
+  },
+  resultText: {
+    fontSize: 20,
+  },
+  pickerStyle: {
+    height:50,
+    width:300
+  },
+  paddingText: {
+    height:50
+  }
 });

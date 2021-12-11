@@ -7,21 +7,21 @@ import * as SQLite from "expo-sqlite"
 var db;
 
 async function loadDatabase() {
-  //console.log("Method starting, Opening Database");
-  if (!(await FileSystem.getInfoAsync(FileSystem.documentDirectory + 'SQLite')).exists) {
-    await FileSystem.makeDirectoryAsync(FileSystem.documentDirectory + 'SQLite');
-  }
-  //console.log("Copying db to app filesystem");
+  await FileSystem.deleteAsync(FileSystem.documentDirectory + 'SQLite');
+  await FileSystem.makeDirectoryAsync(FileSystem.documentDirectory + 'SQLite');
   await FileSystem.downloadAsync(
     Asset.fromModule(require('../assets/halfway.db')).uri,
-    FileSystem.documentDirectory + 'SQLite/myDatabaseName4.db'
+    FileSystem.documentDirectory + 'SQLite/myDatabaseName.db'
   );
   console.log("Opening Database");
   return new Promise((resolve, _reject) => {
-    SQLite.openDatabase('myDatabaseName4.db', "", "", "", 
-      dbo => {db = dbo; console.log("Database opened"); resolve();}
+    SQLite.openDatabase('myDatabaseName.db', "", "", "", 
+      dbo => {
+        db = dbo; 
+        console.log("Database opened"); 
+        resolve();
+      }
     )
-
   }) 
 }
 
@@ -108,7 +108,7 @@ function processWeights(destinations) {
     const sumVal = sum(places);
     const stdDevVal = standardDeviation(places);
 
-    destinationObj = {name: name, sum: sumVal, stdDev: stdDevVal};
+    destinationObj = {name: name, sum: sumVal, stdDev: stdDevVal, prod:sumVal*stdDevVal};
     sortableDestinations.push(destinationObj);
   }
   return sortableDestinations;
@@ -134,30 +134,42 @@ function stdDevCompare( a, b ) {
   }
 }
 
-
-function stationNameFromCode(code, callback) {
-  const sql = `SELECT name FROM stations WHERE code = "${code}"`;
-  db.transaction(
-    tx => {
-      tx.executeSql(
-        sql, [],
-        (_, resultSet) => {
-          console.log("Name from code = ", resultSet.rows.item(0).NAME);
-          callback(resultSet.rows.item(0).NAME);
-        },
-        error => {}
-      )  
-    },
-    error => {}
-  );
+function prodCompare( a, b ) {
+  if ( a.prod < b.prod ) {
+    return -1;
+  } else if ( a.prod > b.prod ) {
+    return 1;
+  } else {
+    return 0;
+  }
 }
 
-function printTop(values, comparator, callback) {
+
+async function stationNameFromCode(code) {
+  const sql = `SELECT name FROM stations WHERE code = "${code}"`;
+  return new Promise((resolve, reject) => {
+    db.transaction(
+      tx => {
+        tx.executeSql(
+          sql, [],
+          (_, resultSet) => {
+            console.log("Name from code = ", resultSet.rows.item(0).NAME);
+            resolve(resultSet.rows.item(0).NAME);
+          },
+          error => {reject(error)}
+        )  
+      },
+      error => {reject(error)}
+    );
+  }
+}
+async function getTop(values, comparator, comparatorName, numEntrypoints, callback) {
   values.sort(comparator);
   var best = values[0];
   console.log("Best = ", best);
-  stationNameFromCode(best.name, fullName => {
-    callback(`${fullName}: Total = ${best.sum}, Dev = ${best.stdDev}`);
+  var fullName = await stationNameFromCode(best.name)
+  result = {name: fullName, mean:best.sum/numEntrypoints, stddev:best.stdDev, compare:comparatorName};
+  callback(`Meet at ${fullName}\n${(best.sum/numEntrypoints).toFixed(1)} mins each\n${best.stdDev.toFixed(2)} mins difference`);
   });
 }
 
@@ -180,7 +192,8 @@ function fairestStation(startingFrom, callback) {
               destinations[row.STATIONB].push(row.WEIGHT);
             }
             let sortable = processWeights(destinations);
-            printTop(sortable, stdDevCompare, topStations => {
+            // TODO: run all three comparators and return them all, 
+            getTop(sortable, prodCompare, "Balanced", startingFrom.length, topStations => {
               console.log('Top Stations = ', topStations); 
               callback(topStations);
             });
