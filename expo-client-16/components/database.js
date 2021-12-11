@@ -105,19 +105,19 @@ function processWeights(destinations) {
   sortableDestinations = [];
   for (let name in destinations) {
     const places = destinations[name];
-    const sumVal = sum(places);
+    const meanVal = average(places);
     const stdDevVal = standardDeviation(places);
 
-    destinationObj = {name: name, sum: sumVal, stdDev: stdDevVal, prod:sumVal*stdDevVal};
+    destinationObj = {name: name, mean: meanVal, stdDev: stdDevVal, prod:(meanVal + 2 * stdDevVal)};
     sortableDestinations.push(destinationObj);
   }
   return sortableDestinations;
 }
 
-function sumCompare( a, b ) {
-  if ( a.sum < b.sum ) {
+function meanCompare( a, b ) {
+  if ( a.mean < b.mean ) {
     return -1;
-  } else if ( a.sum > b.sum ) {
+  } else if ( a.mean > b.mean ) {
     return 1;
   } else {
     return 0;
@@ -161,16 +161,15 @@ async function stationNameFromCode(code) {
       },
       error => {reject(error)}
     );
-  }
+  })
 }
-async function getTop(values, comparator, comparatorName, numEntrypoints, callback) {
+
+async function getTop(values, comparator, callback) {
   values.sort(comparator);
   var best = values[0];
   console.log("Best = ", best);
-  var fullName = await stationNameFromCode(best.name)
-  result = {name: fullName, mean:best.sum/numEntrypoints, stddev:best.stdDev, compare:comparatorName};
-  callback(`Meet at ${fullName}\n${(best.sum/numEntrypoints).toFixed(1)} mins each\n${best.stdDev.toFixed(2)} mins difference`);
-  });
+  var fullName = await stationNameFromCode(best.name);
+  callback(`Meet at ${fullName}\n${(best.mean).toFixed(1)} +/- ${2 * best.stdDev.toFixed(2)} mins per journey`);
 }
 
 function fairestStation(startingFrom, callback) {
@@ -192,8 +191,7 @@ function fairestStation(startingFrom, callback) {
               destinations[row.STATIONB].push(row.WEIGHT);
             }
             let sortable = processWeights(destinations);
-            // TODO: run all three comparators and return them all, 
-            getTop(sortable, prodCompare, "Balanced", startingFrom.length, topStations => {
+            getTop(sortable, prodCompare, topStations => {
               console.log('Top Stations = ', topStations); 
               callback(topStations);
             });

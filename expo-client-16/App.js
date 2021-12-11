@@ -25,7 +25,7 @@ export default class App extends React.Component {
     super(props);
     this.state = {
       isReady: false,
-      fairestStationLabel: 'Meet at: KINGS CROSS',
+      fairestStationLabel: 'Please Select Some Stations',
       stations: [],
       selectedStation1: null,
       selectedStation2: null,
@@ -46,6 +46,7 @@ export default class App extends React.Component {
 
   saveStations(resultSet) {
     let stations = [];
+    stations.push({NAME: "---", ID: null});
     for (let i = 0; i < resultSet.rows.length; i++) {
       let row = resultSet.rows.item(i);
       stations.push({
@@ -156,6 +157,8 @@ const styles = StyleSheet.create({
   },
   resultText: {
     fontSize: 20,
+    textAlign: 'center', // <-- the magic
+
   },
   pickerStyle: {
     height:50,
