@@ -166,10 +166,15 @@ async function stationNameFromCode(code) {
 
 async function getTop(values, comparator, callback) {
   values.sort(comparator);
-  var best = values[0];
-  console.log("Best = ", best);
-  var fullName = await stationNameFromCode(best.name);
-  callback(`Meet at ${fullName}\n${(best.mean).toFixed(1)} +/- ${2 * best.stdDev.toFixed(2)} mins per journey`);
+  console.log("Top 3 = ", values[0], values[1], values[2]);
+  var result = "";
+  for (var i = 0; i < 3; i++)
+  {
+    var option = values[i];
+    var fullName = await stationNameFromCode(option.name);
+    result += `${fullName}\n${(option.mean).toFixed(1)} +/- ${2 * option.stdDev.toFixed(1)} minutes\n\n`
+  }
+  callback(result);
 }
 
 function fairestStation(startingFrom, callback) {

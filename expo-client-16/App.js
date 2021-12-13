@@ -25,7 +25,7 @@ export default class App extends React.Component {
     super(props);
     this.state = {
       isReady: false,
-      fairestStationLabel: 'Please Select Some Stations',
+      fairestStationLabel: 'Select Stations',
       stations: [],
       selectedStation1: null,
       selectedStation2: null,
@@ -158,11 +158,12 @@ const styles = StyleSheet.create({
   titleText: {
     fontSize: 60,
     fontWeight: 'bold',
-    height: 130
+    height: 120
   },
   resultText: {
     fontSize: 20,
     textAlign: 'center', // <-- the magic
+    height: 200
 
   },
   pickerStyle: {
