@@ -17,6 +17,7 @@
     "expo-file-system": "~13.0.3",
     "expo-sqlite": "~10.0.3",
     "expo-status-bar": "~1.1.0",
+    "ngrok": "^4.3.1",
     "react": "17.0.1",
     "react-dom": "17.0.1",
     "react-native": "^0.64.3",

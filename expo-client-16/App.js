@@ -160,10 +160,10 @@ export default class App extends React.Component {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flex: 0,
     backgroundColor: "#fff",
     alignItems: "center",
-    justifyContent: "center",
+    //justifyContent: "center",
   },
   titleText: {
     fontSize: 60,
@@ -176,16 +176,16 @@ const styles = StyleSheet.create({
     height: 200,
   },
   pickerView: {
-    borderWidth: 1,
-    borderColor: "grey",
-    borderRadius: 4,
-    marginBottom: 5,
+    //borderWidth: 1,
+    //borderColor: "grey",
+    //borderRadius: 4,
+    //marginBottom: 5,
   },
   pickerStyle: {
-    height: 50,
+    height: 100,
     width: 300,
   },
   paddingText: {
-    height: 50,
+    //height: 50,
   },
 });

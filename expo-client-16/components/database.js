@@ -5,7 +5,9 @@ import * as SQLite from "expo-sqlite";
 var db;
 
 async function loadDatabase() {
-  await FileSystem.deleteAsync(FileSystem.documentDirectory + "SQLite");
+  await FileSystem.deleteAsync(FileSystem.documentDirectory + "SQLite", {
+    idempotent: true,
+  });
   await FileSystem.makeDirectoryAsync(FileSystem.documentDirectory + "SQLite");
   await FileSystem.downloadAsync(
     Asset.fromModule(require("../assets/halfway.db")).uri,
