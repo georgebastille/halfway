@@ -1,9 +1,11 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Picker } from "@react-native-picker/picker";
+import { AutocompleteDropdown } from "react-native-autocomplete-dropdown";
 import AppLoading from "expo-app-loading";
 import { StatusBar } from "expo-status-bar";
 import { database } from "./components/database";
+import { AutoComplete } from "./components/autocomplete";
 
 function error(msg) {
   console.log("Error(msg):");
@@ -97,24 +99,10 @@ export default class App extends React.Component {
     return (
       <View style={styles.container}>
         <Text style={styles.titleText}>Halfway</Text>
-        <View style={styles.pickerView}>
-          <Picker
-            style={styles.pickerStyle}
-            selectedValue={this.state.selectedStation1}
-            onValueChange={(value, _index) => {
-              console.log(value, _index);
-              this.setState({ selectedStation1: value }, () =>
-                this.determineFairest((fairest) =>
-                  this.setState({ fairestStationLabel: fairest })
-                )
-              );
-            }}
-          >
-            {this.state.stations.map((line, id) => (
-              <Picker.Item label={line.NAME} value={line.ID} key={id} />
-            ))}
-          </Picker>
-        </View>
+        <AutoComplete
+          style={styles.pickerStyle}
+          stations={this.state.stations}
+        />
         <View style={styles.pickerView}>
           <Picker
             style={styles.pickerStyle}
@@ -160,10 +148,11 @@ export default class App extends React.Component {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 0,
+    flex: 1,
     backgroundColor: "#fff",
-    alignItems: "center",
+    //alignItems: "center",
     //justifyContent: "center",
+    padding: 20,
   },
   titleText: {
     fontSize: 60,
