@@ -4,6 +4,7 @@
     "slug": "expo-client-25",
     "version": "1.0.0",
     "orientation": "portrait",
+    "backgroundColor": "#F5F6FA",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
@@ -33,7 +34,8 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true
