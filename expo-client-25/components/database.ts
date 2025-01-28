@@ -11,7 +11,7 @@ interface StationData {
 }
 
 class Database {
-  private db: SQLite.WebSQLDatabase | null = null;
+  private db: SQLite.SQLiteDatabase | null = null;
 
   async loadDatabase(): Promise<void> {
     try {
@@ -36,7 +36,7 @@ class Database {
       }
 
       // Open the database
-      this.db = SQLite.openDatabaseSync(dbName);
+      this.db = await SQLite.openDatabaseAsync(dbName);
 
       // Verify the database was opened successfully
       if (!this.db) {
@@ -57,29 +57,13 @@ class Database {
       throw new Error("Database not initialized");
     }
 
-    return new Promise<void>((resolve, reject) => {
-      this.db!.transaction(
-        (tx) => {
-          tx.executeSql(
-            "SELECT 1",
-            [],
-            () => {
-              console.log("Database connection verified");
-              resolve();
-            },
-            (_, error) => {
-              console.error("SQL Error in test:", error);
-              reject(error);
-              return false;
-            },
-          );
-        },
-        (error) => {
-          console.error("Transaction Error in test:", error);
-          reject(error);
-        },
-      );
-    });
+    try {
+      const result = await this.db.getFirstAsync("SELECT 1");
+      console.log("Database connection verified", result);
+    } catch (error) {
+      console.error("SQL Error in test:", error);
+      throw error;
+    }
   }
 
   async getStationsAsync(): Promise<any> {
@@ -87,26 +71,13 @@ class Database {
       throw new Error("Database not initialized");
     }
 
-    return new Promise((resolve, reject) => {
-      this.db!.transaction(
-        (tx) => {
-          tx.executeSql(
-            "SELECT * FROM STATIONS;",
-            [],
-            (_, result) => resolve(result),
-            (_, error) => {
-              console.error("Error getting stations:", error);
-              reject(error);
-              return false;
-            },
-          );
-        },
-        (error) => {
-          console.error("Transaction error:", error);
-          reject(error);
-        },
-      );
-    });
+    try {
+      const result = await this.db.getAllAsync("SELECT * FROM STATIONS;");
+      return result;
+    } catch (error) {
+      console.error("Error getting stations:", error);
+      throw error;
+    }
   }
 
   private average(data: number[]): number {
@@ -141,26 +112,25 @@ class Database {
     if (!this.db) {
       throw new Error("Database not initialized");
     }
+    if (!code && typeof code !== undefined) {
+      throw new Error("Invalid station code");
+    }
+    console.log("Code: " + code);
 
-    return new Promise((resolve, reject) => {
-      this.db!.transaction((tx) => {
-        tx.executeSql(
-          "SELECT name FROM stations WHERE code = ?",
-          [code],
-          (_, result) => {
-            if (result.rows.length > 0) {
-              resolve(result.rows.item(0).name);
-            } else {
-              reject(new Error("Station not found"));
-            }
-          },
-          (_, error) => {
-            reject(error);
-            return false;
-          },
-        );
-      });
-    });
+    try {
+      const result = await this.db.getFirstAsync<{ name: string }>(
+        "SELECT name FROM stations WHERE code = ?",
+        [code],
+      );
+      if (result) {
+        return result.name;
+      } else {
+        throw new Error("Station not found");
+      }
+    } catch (error) {
+      console.error("Error getting station name:", error);
+      throw error;
+    }
   }
 
   private async getTop(
@@ -203,31 +173,18 @@ class Database {
         AND (stationa = ${placeholders})
       `;
 
-      this.db.transaction((tx) => {
-        tx.executeSql(
-          sql,
-          startingFrom,
-          (_, resultSet) => {
-            const destinations: Record<string, number[]> = {};
+      const resultSet = await this.db.getAllAsync(sql, startingFrom);
+      const destinations: Record<string, number[]> = {};
 
-            for (let i = 0; i < resultSet.rows.length; i++) {
-              const row = resultSet.rows.item(i);
-              if (!destinations[row.stationb]) {
-                destinations[row.stationb] = [];
-              }
-              destinations[row.stationb].push(row.weight);
-            }
+      for (const row of resultSet) {
+        if (!destinations[row.stationb]) {
+          destinations[row.stationb] = [];
+        }
+        destinations[row.stationb].push(row.weight);
+      }
 
-            const sortable = this.processWeights(destinations);
-            this.getTop(sortable, callback);
-          },
-          (_, error) => {
-            console.error("SQL Error:", error);
-            callback("Error calculating fairest station");
-            return false;
-          },
-        );
-      });
+      const sortable = this.processWeights(destinations);
+      await this.getTop(sortable, callback);
     } catch (error) {
       console.error("Error in fairestStation:", error);
       callback("An error occurred");

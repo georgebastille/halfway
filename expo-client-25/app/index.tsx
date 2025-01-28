@@ -52,6 +52,7 @@ export default class App extends React.Component<{}, AppState> {
       console.log("Loading Halfway DB...");
       await database.loadDatabase();
       const stations = await database.getStationsAsync();
+      console.log(stations);
       this.saveStations(stations);
       this.setState({ isLoading: false });
       console.log("Done loading Halfway DB");
@@ -65,9 +66,9 @@ export default class App extends React.Component<{}, AppState> {
     rows: { length: number; item: (index: number) => any };
   }): void {
     const stations: Station[] = [{ NAME: "Select a station", ID: null }];
-
-    for (let i = 0; i < resultSet.rows.length; i++) {
-      const row = resultSet.rows.item(i);
+    console.log("Resultset");
+    console.log(resultSet);
+    for (const row of resultSet) {
       stations.push({
         NAME: row.NAME,
         ID: row.CODE,
