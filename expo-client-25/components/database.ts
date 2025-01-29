@@ -107,29 +107,27 @@ class Database {
       };
     });
   }
-
   private async stationNameFromCode(code: string): Promise<string> {
     if (!this.db) {
       throw new Error("Database not initialized");
     }
-    if (!code && typeof code !== undefined) {
-      throw new Error("Invalid station code");
+    if (!code) {
+      return "No station selected";
     }
-    console.log("Code: " + code);
 
     try {
-      const result = await this.db.getFirstAsync<{ name: string }>(
-        "SELECT name FROM stations WHERE code = ?",
+      const result = await this.db.getFirstAsync<{ NAME: string }>(
+        "SELECT NAME FROM STATIONS WHERE CODE = ?",
         [code],
       );
       if (result) {
-        return result.name;
+        return result.NAME;
       } else {
-        throw new Error("Station not found");
+        return "Station not found";
       }
     } catch (error) {
       console.error("Error getting station name:", error);
-      throw error;
+      return "Error finding station";
     }
   }
 
@@ -164,16 +162,30 @@ class Database {
       return;
     }
 
-    try {
-      const placeholders = startingFrom.map(() => "?").join(" OR stationa = ");
-      const sql = `
-        SELECT stationb, weight
-        FROM fullroutes
-        WHERE weight < 10000.0
-        AND (stationa = ${placeholders})
-      `;
+    // Filter out null or undefined values
+    const validStations = startingFrom.filter((station) => station != null);
 
-      const resultSet = await this.db.getAllAsync(sql, startingFrom);
+    if (validStations.length === 0) {
+      callback("Please select valid stations");
+      return;
+    }
+
+    try {
+      const placeholders = validStations.map(() => "?").join(" OR stationa = ");
+      const sql = `
+              SELECT stationb, weight
+              FROM fullroutes
+              WHERE weight < 10000.0
+              AND (stationa = ${placeholders})
+          `;
+
+      const resultSet = await this.db.getAllAsync(sql, validStations);
+
+      if (!resultSet || resultSet.length === 0) {
+        callback("No valid routes found");
+        return;
+      }
+
       const destinations: Record<string, number[]> = {};
 
       for (const row of resultSet) {
@@ -187,7 +199,7 @@ class Database {
       await this.getTop(sortable, callback);
     } catch (error) {
       console.error("Error in fairestStation:", error);
-      callback("An error occurred");
+      callback("An error occurred while finding stations");
     }
   }
 }
