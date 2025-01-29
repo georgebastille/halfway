@@ -177,10 +177,10 @@ class Database {
       const destinations: Record<string, number[]> = {};
 
       for (const row of resultSet) {
-        if (!destinations[row.stationb]) {
-          destinations[row.stationb] = [];
+        if (!destinations[row.STATIONB]) {
+          destinations[row.STATIONB] = [];
         }
-        destinations[row.stationb].push(row.weight);
+        destinations[row.STATIONB].push(row.WEIGHT);
       }
 
       const sortable = this.processWeights(destinations);

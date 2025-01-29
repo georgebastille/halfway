@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "expo-client-25",
+    "jsEngine": "hermes",
     "slug": "expo-client-25",
     "version": "1.0.0",
     "orientation": "portrait",
