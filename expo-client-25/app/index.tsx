@@ -1,3 +1,4 @@
+// halfway/expo-client-25/app/index.tsx
 import React from "react";
 import {
   StyleSheet,
@@ -6,13 +7,14 @@ import {
   SafeAreaView,
   ActivityIndicator,
   TouchableOpacity,
-  ScrollView,
   Dimensions,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
 import { database } from "../components/database";
 import { StatusBar } from "expo-status-bar";
 import { MaterialIcons } from "@expo/vector-icons";
+import AutocompleteInput from "../components/AutocompleteInput";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { AutocompleteDropdownContextProvider } from "react-native-autocomplete-dropdown";
 
 const { width } = Dimensions.get("window");
 
@@ -52,7 +54,6 @@ export default class App extends React.Component<{}, AppState> {
       console.log("Loading Halfway DB...");
       await database.loadDatabase();
       const stations = await database.getStationsAsync();
-      //console.log(stations);
       this.saveStations(stations);
       this.setState({ isLoading: false });
       console.log("Done loading Halfway DB");
@@ -65,9 +66,7 @@ export default class App extends React.Component<{}, AppState> {
   private saveStations(resultSet: {
     rows: { length: number; item: (index: number) => any };
   }): void {
-    const stations: Station[] = [{ NAME: "Select a station", ID: null }];
-    //console.log("Resultset");
-    //console.log(resultSet);
+    const stations: Station[] = []; // Remove the initial null station
     for (const row of resultSet) {
       stations.push({
         NAME: row.NAME,
@@ -92,7 +91,7 @@ export default class App extends React.Component<{}, AppState> {
 
   private handleStationChange = (
     stationNumber: 1 | 2 | 3,
-    value: string,
+    value: string | null,
   ): void => {
     const stateKey = `selectedStation${stationNumber}` as const;
 
@@ -103,30 +102,18 @@ export default class App extends React.Component<{}, AppState> {
     );
   };
 
-  private renderPicker = (stationNumber: 1 | 2 | 3): React.ReactElement => {
+  private renderAutocomplete = (
+    stationNumber: 1 | 2 | 3,
+  ): React.ReactElement => {
     const stateKey = `selectedStation${stationNumber}` as const;
 
     return (
-      <View style={styles.pickerContainer}>
-        <Text style={styles.pickerLabel}>Starting Point {stationNumber}</Text>
-        <View style={styles.pickerWrapper}>
-          <Picker
-            style={styles.pickerStyle}
-            selectedValue={this.state[stateKey]}
-            onValueChange={(value) =>
-              this.handleStationChange(stationNumber, value)
-            }
-          >
-            {this.state.stations.map((station, index) => (
-              <Picker.Item
-                label={station.NAME}
-                value={station.ID}
-                key={`station-${index}`}
-              />
-            ))}
-          </Picker>
-        </View>
-      </View>
+      <AutocompleteInput
+        stations={this.state.stations}
+        onSelect={(value) => this.handleStationChange(stationNumber, value)}
+        label={`Starting Point ${stationNumber}`}
+        value={this.state[stateKey]}
+      />
     );
   };
 
@@ -150,39 +137,41 @@ export default class App extends React.Component<{}, AppState> {
     }
 
     return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar style="dark" />
-        <ScrollView
-          contentContainerStyle={styles.scrollContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.header}>
-            <Text style={styles.titleText}>Halfway</Text>
-            <Text style={styles.subtitleText}>
-              Find the perfect meeting point
-            </Text>
-          </View>
-
-          {this.renderPicker(1)}
-          {this.renderPicker(2)}
-          {this.renderPicker(3)}
-
-          <TouchableOpacity
-            style={styles.resetButton}
-            onPress={this.resetSelections}
+      <AutocompleteDropdownContextProvider>
+        <SafeAreaView style={styles.container}>
+          <StatusBar style="dark" />
+          <KeyboardAwareScrollView
+            contentContainerStyle={styles.scrollContainer}
+            showsVerticalScrollIndicator={false}
           >
-            <MaterialIcons name="refresh" size={20} color="white" />
-            <Text style={styles.resetButtonText}>Reset Selections</Text>
-          </TouchableOpacity>
+            <View style={styles.header}>
+              <Text style={styles.titleText}>Halfway</Text>
+              <Text style={styles.subtitleText}>
+                Find the perfect meeting point
+              </Text>
+            </View>
 
-          <View style={styles.resultContainer}>
-            <Text style={styles.resultLabel}>Meeting Point:</Text>
-            <Text style={styles.resultText}>
-              {this.state.fairestStationLabel}
-            </Text>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
+            {this.renderAutocomplete(1)}
+            {this.renderAutocomplete(2)}
+            {this.renderAutocomplete(3)}
+
+            <TouchableOpacity
+              style={styles.resetButton}
+              onPress={this.resetSelections}
+            >
+              <MaterialIcons name="refresh" size={20} color="white" />
+              <Text style={styles.resetButtonText}>Reset Selections</Text>
+            </TouchableOpacity>
+
+            <View style={styles.resultContainer}>
+              <Text style={styles.resultLabel}>Meeting Point:</Text>
+              <Text style={styles.resultText}>
+                {this.state.fairestStationLabel}
+              </Text>
+            </View>
+          </KeyboardAwareScrollView>
+        </SafeAreaView>
+      </AutocompleteDropdownContextProvider>
     );
   }
 }
@@ -220,26 +209,6 @@ const styles = StyleSheet.create({
   subtitleText: {
     fontSize: 16,
     color: "#666666",
-  },
-  pickerContainer: {
-    marginBottom: 20,
-  },
-  pickerLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 8,
-    color: "#333333",
-  },
-  pickerWrapper: {
-    backgroundColor: "white",
-    borderRadius: 10,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "#E0E0E0",
-  },
-  pickerStyle: {
-    height: 50,
-    width: width - 40,
   },
   resetButton: {
     flexDirection: "row",
