@@ -3,6 +3,7 @@ import sys
 from typing import Final, NamedTuple
 from collections import defaultdict
 from tqdm import tqdm
+from numpy import median
 import os
 
 
@@ -41,29 +42,36 @@ class TflAPI:
 
     def get_modes(self) -> list[str]:
         mode_response = self._fetch_tfl_data("/Line/Meta/Modes")
-        modes = []
-        if mode_response is not None:
-            modes = [x.get("modeName", None) for x in mode_response]
+        modes: list[str] = []
+        if mode_response is None:
+            return modes
+
+        modes = [x.get("modeName", None) for x in mode_response]
         return modes
 
     def get_lines(self, modes: list[str]) -> dict[str, str]:
         lines = self._fetch_tfl_data("/Line/Mode/" + ",".join(modes))
-        line_d = {}
-        if lines is not None:
-            for line in lines:
-                line_d[line["id"]] = line["name"]
+        line_d: dict[str, str] = {}
+        if lines is None:
+            return line_d
+
+        for line in lines:
+            line_d[line["id"]] = line["name"]
         return line_d
 
     def get_stations(self, line_id: str) -> dict[str, Station]:
         stations = self._fetch_tfl_data(
             f"/Line/{line_id}/StopPoints?tflOperatedNationalRailStationsOnly=false"
         )
-        stations_d = {}
-        if stations is not None:
-            for station in stations:
-                name = station["commonName"]
-                id = station["naptanId"]
-                stations_d[id] = Station(name=name, id=id, line_id=line_id)
+        stations_d: dict[str, Station] = {}
+
+        if stations is None:
+            return stations_d
+
+        for station in stations:
+            name = station["commonName"]
+            id = station["naptanId"]
+            stations_d[id] = Station(name=name, id=id, line_id=line_id)
 
         return stations_d
 
@@ -76,15 +84,45 @@ class TflAPI:
             return []
 
         first_stations = []
-        if ordered_stations is not None:
-            orderedLineRoutes = ordered_stations.get("orderedLineRoutes", [])
-            for variation in orderedLineRoutes:
-                first = variation.get("naptanIds", [None])[0]
-                if first is not None:
-                    first_stations.append(first)
+        if ordered_stations is None:
+            return first_stations
+
+        orderedLineRoutes = ordered_stations.get("orderedLineRoutes", [])
+        for variation in orderedLineRoutes:
+            first = variation.get("naptanIds", [None])[0]
+            if first is not None:
+                first_stations.append(first)
         return first_stations
 
-    def get_timetables(self, station_id: str) -> list[list[StationTimeInterval]]: ...
+    def _time_from_journey(self, journey: dict) -> int:
+        return int(journey["hour"]) * 60 + int(journey["minute"])
+
+    def get_timetables(
+        self, line_id: str, station_id: str
+    ) -> tuple[list[list[StationTimeInterval]], int]:
+        timetables = self._fetch_tfl_data(f"/Line/{line_id}/Timetable/{station_id}")
+        times: list[list[StationTimeInterval]] = []
+        if timetables is None: 
+            return times, 0
+
+        # start with line frequency
+        gaps_between_trains = []
+        first = timetables["timetable"]["routes"][0]["schedules"][0]["firstJourney"]
+        first_time = self._time_from_journey(first)
+        for schedule in timetables["timetable"]["routes"][0]["schedules"][0]["knownJourneys"][1:]:
+            next_time = self._time_from_journey(schedule)
+            print(f"Time between Trains = {next_time - first_time} mins")
+            gaps_between_trains.append(next_time)
+            first_time = next_time
+        time_between_trains: int = int(median(gaps_between_trains))
+
+
+        # now for the 
+
+
+        return (times, time_between_trains)
+
+
 
 
 DESIRED_MODES: Final = ["dlr", "elizabeth-line", "overground", "tube", "tram"]
@@ -108,7 +146,7 @@ if __name__ == "__main__":
     line_id_2_first_stations: dict[str, set[str]] = defaultdict(set)
 
     for line_id in tqdm(line_id_2_name.keys()):
-        #print(line_id)
+        # print(line_id)
         station_d = tfl.get_stations(line_id)
         for station_id, station_tuple in station_d.items():
             station_id_2_name[station_id] = station_tuple.name
