@@ -103,16 +103,19 @@ class TflAPI:
         timetables = self._fetch_tfl_data(f"/Line/{line_id}/Timetable/{station_id}")
         times: list[list[StationTimeInterval]] = []
         if timetables is None: 
-            return times, 0
+            return times, -1
 
         # start with line frequency
         gaps_between_trains = []
-        first = timetables["timetable"]["routes"][0]["schedules"][0]["firstJourney"]
+        try:
+            first = timetables["timetable"]["routes"][0]["schedules"][0]["firstJourney"]
+        except (KeyError, IndexError):
+            print(f"Timetable Keyeror for line: {line_id} and station: {station_id_2_name[station_id]}")
+
         first_time = self._time_from_journey(first)
         for schedule in timetables["timetable"]["routes"][0]["schedules"][0]["knownJourneys"][1:]:
             next_time = self._time_from_journey(schedule)
-            print(f"Time between Trains = {next_time - first_time} mins")
-            gaps_between_trains.append(next_time)
+            gaps_between_trains.append(next_time - first_time)
             first_time = next_time
         time_between_trains: int = int(median(gaps_between_trains))
 
@@ -125,7 +128,7 @@ class TflAPI:
 
 
 
-DESIRED_MODES: Final = ["dlr", "elizabeth-line", "overground", "tube", "tram"]
+DESIRED_MODES: Final = ["elizabeth-line", "overground", "tube", "tram"]
 
 if __name__ == "__main__":
     app_id = os.environ.get("TFL_APP_ID")
@@ -157,10 +160,13 @@ if __name__ == "__main__":
             line_id_2_first_stations[line_id].update(first_stations)
 
         for start_station in line_id_2_first_stations[line_id]:
-            timetable = tfl.get_timetables(start_station)
+            timetable, wait_time = tfl.get_timetables(line_id, start_station)
+            print(f"{line_id}: {wait_time}")
 
-    for line_id, first_stations in line_id_2_first_stations.items():
-        print(f"{line_id}: {','.join([station_id_2_name[x] for x in first_stations])}")
+
+
+    #for line_id, first_stations in line_id_2_first_stations.items():
+    #    print(f"{line_id}: {','.join([station_id_2_name[x] for x in first_stations])}")
 
     # for each line, go outbound and inbound and identify the first station
     # From this we get a list for each line, a list of starting stations
