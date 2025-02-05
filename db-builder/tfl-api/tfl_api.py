@@ -97,38 +97,44 @@ class TflAPI:
     def _time_from_journey(self, journey: dict) -> int:
         return int(journey["hour"]) * 60 + int(journey["minute"])
 
-    def get_timetables(
-        self, line_id: str, station_id: str
-    ) -> tuple[list[list[StationTimeInterval]], int]:
-        timetables = self._fetch_tfl_data(f"/Line/{line_id}/Timetable/{station_id}")
-        times: list[list[StationTimeInterval]] = []
-        if timetables is None: 
-            return times, -1
-
+    def get_time_between_trains_at_station(self, line_id: str, station_id: str):
+        timetables = self._fetch_tfl_data(f"/Line/{line_id}/Timetable/{station_id}?direction=outbound")
+        if timetables is None:
+            return -1
         # start with line frequency
         gaps_between_trains = []
         try:
             first = timetables["timetable"]["routes"][0]["schedules"][0]["firstJourney"]
         except (KeyError, IndexError):
-            print(f"Timetable Keyeror for line: {line_id} and station: {station_id_2_name[station_id]}")
+            print(
+                f"Timetable Keyeror for line: {line_id} and station: {station_id} {station_id_2_name[station_id]}"
+            )
 
         first_time = self._time_from_journey(first)
-        for schedule in timetables["timetable"]["routes"][0]["schedules"][0]["knownJourneys"][1:]:
+        for schedule in timetables["timetable"]["routes"][0]["schedules"][0][
+            "knownJourneys"
+        ][1:]:
             next_time = self._time_from_journey(schedule)
-            gaps_between_trains.append(next_time - first_time)
+            gap = next_time - first_time
+            if gap > 0:
+                gaps_between_trains.append(next_time - first_time)
             first_time = next_time
-        time_between_trains: int = int(median(gaps_between_trains))
+        time_between_trains: int = int(min(gaps_between_trains))
+        return time_between_trains
+
+    def get_timetables(
+        self, line_id: str, station_id: str
+    ) -> list[list[StationTimeInterval]]:
+
+        timetables = self._fetch_tfl_data(f"/Line/{line_id}/Timetable/{station_id}?direction=outbound")
+        times: list[list[StationTimeInterval]] = []
+        if timetables is None:
+            return times
+
+        return times
 
 
-        # now for the 
-
-
-        return (times, time_between_trains)
-
-
-
-
-DESIRED_MODES: Final = ["elizabeth-line", "overground", "tube", "tram"]
+DESIRED_MODES: Final = ["dlr", "elizabeth-line", "overground", "tube", "tram"]
 
 if __name__ == "__main__":
     app_id = os.environ.get("TFL_APP_ID")
@@ -160,12 +166,10 @@ if __name__ == "__main__":
             line_id_2_first_stations[line_id].update(first_stations)
 
         for start_station in line_id_2_first_stations[line_id]:
-            timetable, wait_time = tfl.get_timetables(line_id, start_station)
+            wait_time = tfl.get_time_between_trains_at_station(line_id, start_station)
             print(f"{line_id}: {wait_time}")
 
-
-
-    #for line_id, first_stations in line_id_2_first_stations.items():
+    # for line_id, first_stations in line_id_2_first_stations.items():
     #    print(f"{line_id}: {','.join([station_id_2_name[x] for x in first_stations])}")
 
     # for each line, go outbound and inbound and identify the first station
