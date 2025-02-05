@@ -2,6 +2,7 @@ import requests
 import sys
 from typing import Final, NamedTuple
 from collections import defaultdict
+from tqdm import tqdm
 import os
 
 
@@ -9,6 +10,12 @@ class Station(NamedTuple):
     id: str
     name: str
     line_id: str
+
+
+class StationTimeInterval(NamedTuple):
+    id: str
+    min_time: int
+    max_time: int
 
 
 class TflAPI:
@@ -77,6 +84,8 @@ class TflAPI:
                     first_stations.append(first)
         return first_stations
 
+    def get_timetables(self, station_id: str) -> list[list[StationTimeInterval]]: ...
+
 
 DESIRED_MODES: Final = ["dlr", "elizabeth-line", "overground", "tube", "tram"]
 
@@ -98,16 +107,19 @@ if __name__ == "__main__":
     station_id_2_lines: dict[str, list[str]] = defaultdict(list)
     line_id_2_first_stations: dict[str, set[str]] = defaultdict(set)
 
-    for line_id in line_id_2_name.keys():
-        print(line_id)
+    for line_id in tqdm(line_id_2_name.keys()):
+        #print(line_id)
         station_d = tfl.get_stations(line_id)
         for station_id, station_tuple in station_d.items():
             station_id_2_name[station_id] = station_tuple.name
             station_id_2_lines[station_id].append(station_tuple.line_id)
 
         for direction in ["inbound", "outbound"]:
-            ordered_stops = tfl.get_first_stations(line_id, direction)
-            line_id_2_first_stations[line_id].update(ordered_stops)
+            first_stations = tfl.get_first_stations(line_id, direction)
+            line_id_2_first_stations[line_id].update(first_stations)
+
+        for start_station in line_id_2_first_stations[line_id]:
+            timetable = tfl.get_timetables(start_station)
 
     for line_id, first_stations in line_id_2_first_stations.items():
         print(f"{line_id}: {','.join([station_id_2_name[x] for x in first_stations])}")
