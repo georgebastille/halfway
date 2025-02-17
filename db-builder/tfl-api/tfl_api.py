@@ -3,7 +3,6 @@ import sys
 from typing import Final, NamedTuple
 from collections import defaultdict
 from tqdm import tqdm
-from numpy import median
 import os
 
 
