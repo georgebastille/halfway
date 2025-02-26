@@ -1,10 +1,16 @@
-import requests
+import os
 import sys
 from typing import Final, NamedTuple
-from collections import defaultdict
-from tqdm import tqdm
-import os
+
 import pandas as pd
+import requests
+from tqdm import tqdm
+
+
+class GraphEdge(NamedTuple):
+    from_station: str
+    to_station: str
+    time: int
 
 
 class Station(NamedTuple):
@@ -59,8 +65,7 @@ class TflAPI:
             line_d[line["id"]] = line["name"]
         return line_d
 
-
-    def get_ordered_stations(self, line_id: str, direction:str) -> list[list[str]]:
+    def get_ordered_stations(self, line_id: str, direction: str) -> list[list[str]]:
         ordered_stations = self._fetch_tfl_data(
             f"/Line/{line_id}/Route/Sequence/{direction}"
         )
@@ -94,7 +99,9 @@ class TflAPI:
         return stations_d
 
     def get_travel_time(self, from_station: str, to_station: str) -> int:
-        timetable = self._fetch_tfl_data(f"/Journey/JourneyResults/{from_station}/to/{to_station}?useRealTimeLiveArrivals=false")
+        timetable = self._fetch_tfl_data(
+            f"/Journey/JourneyResults/{from_station}/to/{to_station}?useRealTimeLiveArrivals=false"
+        )
         time = -1
         if not isinstance(timetable, dict):
             return time
@@ -132,7 +139,9 @@ class TflAPI:
         if not isinstance(timetables, dict):
             return []
 
-        gaps_between_trains: list[int] = self.get_time_between_trains_at_station1(timetables)
+        gaps_between_trains: list[int] = self.get_time_between_trains_at_station1(
+            timetables
+        )
         gaps_between_trains.extend(self.get_time_between_trains_at_station2(timetables))
         return gaps_between_trains
 
@@ -197,15 +206,17 @@ if __name__ == "__main__":
         print(
             f"Unexpected Travel Mode detected:\nRequested = {DESIRED_MODES}\nRecieved from TFL = {modes}"
         )
-        sys.exit()
+        sys.exit(-1)
     line_id_2_name = tfl.get_lines(DESIRED_MODES)
 
     all_stations = []
     all_routes = []
-    all_edges = defaultdict(set)
+    all_stops: list[dict[str, str | int]] = []
 
     for line_id in line_id_2_name.keys():
         print(f"Processing line {line_id}: {line_id_2_name[line_id]}")
+        line_edges = set()
+        skipped = 0
         station_d = tfl.get_stations(line_id)
         all_stations.extend(station_d.values())
 
@@ -217,30 +228,33 @@ if __name__ == "__main__":
                 route["line_id"] = line_id
                 route["stations"] = ordered_station
                 all_routes.append(route)
-                for from_station, to_station in tqdm(zip(ordered_station, ordered_station[1:]), total=len(ordered_station)-1):
+                one_stop = {}
+                for from_station, to_station in tqdm(
+                    zip(ordered_station, ordered_station[1:]),
+                    total=len(ordered_station) - 1,
+                ):
+                    if (from_station, to_station) in line_edges:
+                        skipped += 1
+                        continue
                     time = tfl.get_travel_time(from_station, to_station)
-                    all_edges[line_id].add((from_station, to_station, time))
-
+                    one_stop["from_station"] = from_station
+                    one_stop["to_station"] = to_station
+                    one_stop["time"] = time
+                    one_stop["from_line"] = line_id
+                    one_stop["to_line"] = line_id
+                    all_stops.append(one_stop) # TODO still dupes in the output
+                    # TODO add inter stop transfers
+                    line_edges.add((from_station, to_station))
+        print(f"Done, saved {skipped} tfl API requests")
 
     lines_df = pd.DataFrame(line_id_2_name.items(), columns=["line_id", "line_name"])
+    lines_df.to_json("lines.jsonl", orient="records", lines=True)
+
     stations_df = pd.DataFrame(all_stations)
+    stations_df.to_json("stations.jsonl", orient="records", lines=True)
+
     routes_df = pd.DataFrame(all_routes)
-    # TODO convert all_edges to dataframe
+    routes_df.to_json("routes.jsonl", orient="records", lines=True)
 
-        # For each line, for both directions, get a list of station ids.
-        # From this list, construct a set of edges of the form (from, to)
-        # Enrich the vertices in these edges with line information
-        # Construct inter station edges (I think the lines api returns this)
-
-        # for direction in ["inbound", "outbound"]:
-        # first_stations = tfl.get_first_stations(line_id, direction)
-        # line_id_2_first_stations[line_id].update(first_stations)
-
-        # for start_station in line_id_2_first_stations[line_id]:
-        # wait_time = tfl.get_time_between_trains_at_station(line_id, start_station)
-
-    # for line_id, first_stations in line_id_2_first_stations.items():
-    #    print(f"{line_id}: {','.join([station_id_2_name[x] for x in first_stations])}")
-
-    # for each line, go outbound and inbound and identify the first station
-    # From this we get a list for each line, a list of starting stations
+    times_df = pd.DataFrame(all_stops)
+    times_df.to_json("times.jsonl", orient="records", lines=True)
