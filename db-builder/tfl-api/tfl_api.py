@@ -2,6 +2,7 @@ import os
 import sys
 from typing import Final, NamedTuple
 from collections import defaultdict
+from itertools import permutations
 
 import pandas as pd
 import requests
@@ -248,16 +249,17 @@ if __name__ == "__main__":
         print(f"Done, saved {skipped} tfl API requests")
 
     station_lines = defaultdict(list)
+    inter_stations = []
     for station in all_stations:
         station_lines[station.station_id].append(station.line_id)
 
     for station_id, lines in station_lines.items():
-        if len(lines) == 1:
+        if len(lines) <= 1:
             continue
-        ...
-        # Construct all pairs of station-line
-        # Add a default time to each
-        # Create a new dict and new file
+        for from_line, to_line in permutations(lines, 2):
+            time = 5 # TODO figure out a better way to calculate time
+            inter_station = {"station": station_id, "from_line": from_line, "to_line": to_line, "time": time}
+            inter_stations.append(inter_station)
 
 
     lines_df = pd.DataFrame(line_id_2_name.items(), columns=["line_id", "line_name"])
@@ -271,3 +273,6 @@ if __name__ == "__main__":
 
     times_df = pd.DataFrame(all_stops)
     times_df.to_json("times.jsonl", orient="records", lines=True)
+
+    transfers_df = pd.DataFrame(inter_stations)
+    transfers_df.to_json("transfers.jsonl", orient="records", lines=True)
