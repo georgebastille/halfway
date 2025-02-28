@@ -1,6 +1,7 @@
 import os
 import sys
 from typing import Final, NamedTuple
+from collections import defaultdict
 
 import pandas as pd
 import requests
@@ -228,7 +229,6 @@ if __name__ == "__main__":
                 route["line_id"] = line_id
                 route["stations"] = ordered_station
                 all_routes.append(route)
-                one_stop = {}
                 for from_station, to_station in tqdm(
                     zip(ordered_station, ordered_station[1:]),
                     total=len(ordered_station) - 1,
@@ -237,15 +237,28 @@ if __name__ == "__main__":
                         skipped += 1
                         continue
                     time = tfl.get_travel_time(from_station, to_station)
+                    one_stop = {}
                     one_stop["from_station"] = from_station
                     one_stop["to_station"] = to_station
                     one_stop["time"] = time
                     one_stop["from_line"] = line_id
                     one_stop["to_line"] = line_id
-                    all_stops.append(one_stop) # TODO still dupes in the output
-                    # TODO add inter stop transfers
+                    all_stops.append(one_stop)
                     line_edges.add((from_station, to_station))
         print(f"Done, saved {skipped} tfl API requests")
+
+    station_lines = defaultdict(list)
+    for station in all_stations:
+        station_lines[station.station_id].append(station.line_id)
+
+    for station_id, lines in station_lines.items():
+        if len(lines) == 1:
+            continue
+        ...
+        # Construct all pairs of station-line
+        # Add a default time to each
+        # Create a new dict and new file
+
 
     lines_df = pd.DataFrame(line_id_2_name.items(), columns=["line_id", "line_name"])
     lines_df.to_json("lines.jsonl", orient="records", lines=True)
