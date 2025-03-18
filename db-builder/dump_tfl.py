@@ -3,6 +3,7 @@ import sys
 from typing import Final, NamedTuple
 from collections import defaultdict
 from itertools import permutations
+from requests.adapters import HTTPAdapter, Retry
 
 import pandas as pd
 import requests
@@ -32,14 +33,18 @@ class TflAPI:
         self.app_id = app_id
         self.app_key = app_key
         self.base_url = "https://api.tfl.gov.uk"
+        self.session = requests.Session()
+        retries = Retry(total=5,
+                        backoff_factor=0.1,
+                        status_forcelist=[ 500, 502, 503, 504 ])
+        self.session.mount('https://', HTTPAdapter(max_retries=retries))
 
     def _fetch_tfl_data(self, endpoint, params=None) -> dict | list | None:
         url = f"{self.base_url}{endpoint}"
         params = params or {}
         params.update({"app_id": self.app_id, "app_key": self.app_key})
-
         try:
-            response = requests.get(url, params=params, timeout=15)
+            response = self.session.get(url, params=params, timeout=15)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.HTTPError as e:
@@ -252,6 +257,7 @@ if __name__ == "__main__":
     inter_stations = []
     for station in all_stations:
         station_lines[station.station_id].append(station.line_id)
+        station_lines[station.station_id].append("GROUND") # Add Ground for station entry/exit
 
     for station_id, lines in station_lines.items():
         if len(lines) <= 1:
