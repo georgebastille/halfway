@@ -20,6 +20,7 @@ class Station(NamedTuple):
     station_id: str
     station_name: str
     line_id: str
+    hub_id: str | None
 
 
 class StationTimeInterval(NamedTuple):
@@ -100,8 +101,9 @@ class TflAPI:
 
         for station in stations:
             name = station["commonName"]
-            id = station["naptanId"]
-            stations_d[id] = Station(station_name=name, station_id=id, line_id=line_id)
+            id = station["stationNaptan"]
+            hub_id = station.get("hubNaptanCode", None)
+            stations_d[id] = Station(station_name=name, station_id=id, line_id=line_id, hub_id=hub_id)
 
         return stations_d
 
@@ -258,6 +260,16 @@ if __name__ == "__main__":
     for station in all_stations:
         station_lines[station.station_id].append(station.line_id)
         station_lines[station.station_id].append("GROUND") # Add Ground for station entry/exit
+
+
+    # TODO: create station - staion within each hub, expand to station-line - station-line in each hub, and add an edge
+    #hubs
+    hubs = defaultdict(set)
+    for station in all_stations:
+        if hub := station.hub_id:
+            hubs[hub].add(station.station_id)
+
+
 
     for station_id, lines in station_lines.items():
         if len(lines) <= 1:
