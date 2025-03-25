@@ -6,19 +6,11 @@ def build_graph():
     graph = defaultdict(lambda: defaultdict(lambda: float('inf')))
 
     # Read times.jsonl
-    with open('./tfl_data/times.jsonl', 'r') as f:
+    with open('./lines.jsonl', 'r') as f:
         for line in f:
             data = json.loads(line)
-            key1 = (data['from_station'], data['from_line'])
-            key2 = (data['to_station'], data['to_line'])
-            graph[key1][key2] = data['time']
-
-    # Read transfers.jsonl
-    with open('./tfl_data/transfers.jsonl', 'r') as f:
-        for line in f:
-            data = json.loads(line)
-            key1 = (data['station'], data['from_line'])
-            key2 = (data['station'], data['to_line'])
+            key1 = (data['from_id'], data['from_line'])
+            key2 = (data['to_id'], data['to_line'])
             graph[key1][key2] = data['time']
 
     return graph
@@ -58,7 +50,7 @@ def main():
             nodes.add(neighbor)
 
     # Calculate shortest paths between all pairs
-    with open('./tfl_data/shortest_paths.jsonl', 'w') as f:
+    with open('./shortest_paths.jsonl', 'w') as f:
         for start in nodes:
             if not is_ground_node(start):
                 continue
@@ -67,9 +59,7 @@ def main():
                 if distances[end] != float('inf') and start != end and is_ground_node(end):
                     result = {
                         'from_station': start[0],
-                        'from_line': start[1],
                         'to_station': end[0],
-                        'to_line': end[1],
                         'time': int(distances[end])
                     }
                     f.write(json.dumps(result) + '\n')

@@ -1,9 +1,8 @@
 import os
 import sys
 from typing import Final, NamedTuple
-from collections import defaultdict
-from itertools import permutations
 from requests.adapters import HTTPAdapter, Retry
+import concurrent.futures
 
 import pandas as pd
 import requests
@@ -20,7 +19,7 @@ class Station(NamedTuple):
     station_id: str
     station_name: str
     line_id: str
-    hub_id: str | None
+    hub_id: str
     hub_name: str | None
 
 
@@ -36,10 +35,10 @@ class TflAPI:
         self.app_key = app_key
         self.base_url = "https://api.tfl.gov.uk"
         self.session = requests.Session()
-        retries = Retry(total=5,
-                        backoff_factor=0.1,
-                        status_forcelist=[ 500, 502, 503, 504 ])
-        self.session.mount('https://', HTTPAdapter(max_retries=retries))
+        retries = Retry(
+            total=5, backoff_factor=0.1, status_forcelist=[500, 502, 503, 504]
+        )
+        self.session.mount("https://", HTTPAdapter(max_retries=retries))
 
     def _fetch_tfl_data(self, endpoint, params=None) -> dict | list | None:
         url = f"{self.base_url}{endpoint}"
@@ -91,6 +90,24 @@ class TflAPI:
             line_stations.append(station_variation)
         return line_stations
 
+    def get_stop_points(self, stop_point_ids: list[str]) -> list[tuple[str, str]]:
+        stops: list[tuple[str, str]] = []
+
+        def batchify(iterable, n=10):
+            l = len(iterable)
+            for ndx in range(0, l, n):
+                yield iterable[ndx : min(ndx + n, l)]
+
+        for batch in batchify(stop_point_ids):
+            tfl_stops = self._fetch_tfl_data(f"/StopPoint/{','.join(batch)}")
+            if tfl_stops is None:
+                print(f"ERROR: Retrieved No Stop Points for {stop_point_ids}")
+                continue
+
+            for stop in tfl_stops:
+                stops.append((stop["hubNaptanCode"], stop["commonName"]))
+        return stops
+
     def get_stations(self, line_id: str) -> dict[str, Station]:
         stations = self._fetch_tfl_data(
             f"/Line/{line_id}/StopPoints?tflOperatedNationalRailStationsOnly=false"
@@ -98,14 +115,26 @@ class TflAPI:
         stations_d: dict[str, Station] = {}
 
         if stations is None:
+            print(f"ERROR: Retrieved No Stations for {line_id}")
             return stations_d
 
         for station in stations:
             name = station["commonName"]
             id = station["stationNaptan"]
-            hub_id = station.get("hubNaptanCode", None)
-            hub_name = station.get("hubNaptanCode", None)
-            stations_d[id] = Station(station_name=name, station_id=id, line_id=line_id, hub_id=hub_id)
+            if "hubNaptanCode" in station:
+                hub_id = station["hubNaptanCode"]
+                hub_name = None
+            else:
+                hub_id = id
+                hub_name = name
+
+            stations_d[id] = Station(
+                station_name=name,
+                station_id=id,
+                line_id=line_id,
+                hub_id=hub_id,
+                hub_name=hub_name,
+            )
 
         return stations_d
 
@@ -156,7 +185,7 @@ class TflAPI:
         gaps_between_trains.extend(self.get_time_between_trains_at_station2(timetables))
         return gaps_between_trains
 
-    def get_time_between_trains_at_station1(self, timetables):
+    def get_time_between_trains_at_station1(self, timetables) -> list[int]:
         gaps_between_trains: list[int] = []
 
         routes = timetables.get("timetable", {}).get("routes", [])
@@ -174,7 +203,7 @@ class TflAPI:
                     previous_journey = mins_past_midnight
         return gaps_between_trains
 
-    def get_time_between_trains_at_station2(self, timetables):
+    def get_time_between_trains_at_station2(self, timetables) -> list[int]:
         gaps_between_trains: list[int] = []
 
         routes = timetables.get("timetable", {}).get("routes", [])
@@ -203,20 +232,35 @@ class TflAPI:
 
         return times
 
+    def _edge_time(self, edge: tuple[tuple[str,str], tuple[str, str]]) -> tuple[str, str, str, str, int]:
+        from_node = edge[0]
+        to_node = edge[1]
+        if from_node[1] == "GROUND" or to_node[1] == "GROUND":
+            return (*from_node, *to_node, 2)
+        if from_node[1] == "HUB" or to_node[1] == "HUB":
+            return (*from_node, *to_node, 2)
+        return (*from_node, *to_node, self.get_travel_time(from_node[0], to_node[0]))
+
+    def edge_processor( self, edges) -> list[tuple[str, str, str, str, int]]:
+        timed_edges = []
+        # We can use a with statement to ensure threads are cleaned up promptly
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+            # Start the load operations and mark each future with its URL
+            future_to_edge = {executor.submit(self._edge_time, edge) for edge in edges}
+            for future in tqdm(concurrent.futures.as_completed(future_to_edge), total=len(edges)):
+                timed_edges.append(future.result())
+        return timed_edges
+
 
 DESIRED_MODES: Final = ["dlr", "elizabeth-line", "overground", "tube", "tram"]
 
 if __name__ == "__main__":
-    # Define Modes of Transport
-    # Get lines supporting these Modes
-    # For each line, get the station routes, time between consecutive stations and record the hub in a dict, hub -> (station, line)
-    # Look up the hub names
-    # Add a GROUND node for each HUB and an edge between the GROUND and the HUB
-    # Add bidirectional edges between each HUB and its (station, lines)
     app_id = os.environ.get("TFL_APP_ID")
     app_key = os.environ.get("TFL_APP_KEY")
     print(f"Using TFL App ID = {app_id}")
+
     tfl = TflAPI(app_id, app_key)
+    print("Fetching all Valid TFL Modes")
     modes = tfl.get_modes()
     # Check that the modes we expect are available
     if not set(DESIRED_MODES).issubset(modes):
@@ -224,91 +268,52 @@ if __name__ == "__main__":
             f"Unexpected Travel Mode detected:\nRequested = {DESIRED_MODES}\nRecieved from TFL = {modes}"
         )
         sys.exit(-1)
+    print(f"Fetching Lines that serve modes: {DESIRED_MODES}")
     line_id_2_name = tfl.get_lines(DESIRED_MODES)
 
-    all_stations = []
-    all_routes = []
-    all_stops: list[dict[str, str | int]] = []
+    edges: set[tuple[tuple[str, str], tuple[str, str]]] = set()
+    hubs: list[dict[str, str]] = []
+    unnamed_hubs: set[str] = set()
+    grounds: list[dict[str, str]] = []
 
     for line_id in line_id_2_name.keys():
-        print(f"Processing line {line_id}: {line_id_2_name[line_id]}")
-        line_edges = set()
-        skipped = 0
+        print(f"Fetching Stations on the {line_id} line")
         station_d = tfl.get_stations(line_id)
-        for station in station_d.values():
-            station_id = station.station_id
-            line_id = station.line_id
-            hub_id = station.hub_id if station.hub_id else station_id
-            hub_name = station.hub_name if station.hub_name else station.station_name 
 
-        all_stations.extend(station_d.values())
+        for station in station_d.values():
+            station_node = (station.station_id, station.line_id)
+            hub_node = (station.hub_id, "HUB")
+            edges.add((station_node, hub_node))
+            edges.add((hub_node, station_node))
+            if not station.hub_name:
+                unnamed_hubs.add(station.hub_id)
+            else:
+                hubs.append({"hub_id": station.hub_id, "hub_name": station.hub_name})
 
         for direction in ["inbound", "outbound"]:
             ordered_stations = tfl.get_ordered_stations(line_id, direction)
-
             for ordered_station in ordered_stations:
-                route = {}
-                route["line_id"] = line_id
-                route["stations"] = ordered_station
-                all_routes.append(route)
-                for from_station, to_station in tqdm( zip(ordered_station, ordered_station[1:]), total=len(ordered_station) - 1,):
-                    if (from_station, to_station) in line_edges:
-                        skipped += 1
-                        continue
-                    time = tfl.get_travel_time(from_station, to_station)
-                    one_stop = {}
-                    one_stop["from_station"] = from_station
-                    one_stop["to_station"] = to_station
-                    one_stop["time"] = time
-                    one_stop["from_line"] = line_id
-                    one_stop["to_line"] = line_id
-                    all_stops.append(one_stop)
-                    line_edges.add((from_station, to_station))
-        print(f"Done, saved {skipped} tfl API requests")
+                for from_station, to_station in zip(
+                    ordered_station, ordered_station[1:]
+                ):
+                    edges.add(((from_station, line_id), (to_station, line_id)))
 
-    station_lines = defaultdict(list)
-    inter_stations = []
-    for station in all_stations:
-        station_id = station.station_id
-        line_id = station.line_id
-        station_lines[station_id].append(line_id)
-        station_lines[station_id].append("GROUND") # Add Ground for station entry/exit
-        hub = station.hub_id if station.hub_id else station_id
-        inter_stations.append({"from_station": hub, "to_station": station_id, "from_line": "HUB", "to_line": line_id, "time": 2})
-        inter_stations.append({"from_station": station_id, "to_station": hub, "from_line": line_id, "to_line": "HUB", "time": 2})
+    for hub_id, hub_name in tfl.get_stop_points(list(unnamed_hubs)):
+        hubs.append({"hub_id": hub_id, "hub_name": hub_name})
 
+    for hub in hubs:
+        hub_id = hub["hub_id"]
+        hub_name = hub["hub_name"]
+        edges.add(((hub_id, "HUB"), (hub_id, "GROUND")))
+        edges.add(((hub_id, "GROUND"), (hub_id, "HUB")))
+        grounds.append({"station_name": hub_name, "station_id": hub_id})
 
-
-
-    # TODO: create station - staion within each hub, expand to station-line - station-line in each hub, and add an edge
-    #hubs
-    hubs = defaultdict(set)
-    for station in all_stations:
-        if hub := station.hub_id:
-            hubs[hub].add(station.station_id)
-
-
-
-    for station_id, lines in station_lines.items():
-        if len(lines) <= 1:
-            continue
-        for from_line, to_line in permutations(lines, 2):
-            time = 5 # TODO figure out a better way to calculate time
-            inter_station = {"from_station": station_id, "to_station": station_id, "from_line": from_line, "to_line": to_line, "time": time}
-            inter_stations.append(inter_station)
-
-
-    lines_df = pd.DataFrame(line_id_2_name.items(), columns=["line_id", "line_name"])
+    print("Fetching all station -> station times")
+    timed_edges = tfl.edge_processor(edges)
+    lines_df = pd.DataFrame(
+        timed_edges, columns=["from_id", "from_line", "to_id", "to_line", "time"]
+    )
     lines_df.to_json("lines.jsonl", orient="records", lines=True)
 
-    stations_df = pd.DataFrame(all_stations)
+    stations_df = pd.DataFrame(grounds)
     stations_df.to_json("stations.jsonl", orient="records", lines=True)
-
-    routes_df = pd.DataFrame(all_routes)
-    routes_df.to_json("routes.jsonl", orient="records", lines=True)
-
-    times_df = pd.DataFrame(all_stops)
-    times_df.to_json("times.jsonl", orient="records", lines=True)
-
-    transfers_df = pd.DataFrame(inter_stations)
-    transfers_df.to_json("transfers.jsonl", orient="records", lines=True)

@@ -16,14 +16,14 @@ class Database {
 	async loadDatabase(): Promise<void> {
 		try {
 			// Get the database file path
-			const dbName = "halfway2.db";
+			const dbName = "tfl.db";
 			const dbDirectory = `${FileSystem.documentDirectory}SQLite`;
 			const dbPath = `${dbDirectory}/${dbName}`;
 			await FileSystem.deleteAsync(dbPath, { idempotent: true, });
 			await FileSystem.deleteAsync(dbDirectory, { idempotent: true, });
 
 			await FileSystem.makeDirectoryAsync(dbDirectory);
-			const asset = Asset.fromModule(require("../assets/halfway2.db"));
+			const asset = Asset.fromModule(require("../assets/tfl.db"));
 			await Asset.loadAsync(asset);
 			await FileSystem.downloadAsync(asset.uri, dbPath);
 
