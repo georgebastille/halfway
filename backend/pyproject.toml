@@ -1,0 +1,36 @@
+[project]
+name = "halfway-backend"
+version = "0.1.0"
+description = "Backend for the Halfway app"
+authors = [{name = "Gemini", email = "gemini@google.com"}]
+requires-python = ">=3.8"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "sqlite-utils",
+    "pydantic",
+    "numpy",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "mypy",
+    "pytest",
+]
+
+[tool.ruff]
+line-length = 88
+
+[tool.mypy]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

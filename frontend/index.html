@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Halfway Meeting Point Finder</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Halfway Meeting Point Finder</h1>
+
+        <div id="station-inputs">
+            <div class="station-input-group">
+                <label for="station1">Starting Point 1:</label>
+                <input type="text" id="station1" class="station-input" placeholder="Enter station name">
+            </div>
+            <div class="station-input-group">
+                <label for="station2">Starting Point 2:</label>
+                <input type="text" id="station2" class="station-input" placeholder="Enter station name">
+            </div>
+        </div>
+        <button id="add-station">Add Another Starting Point</button>
+
+        <div class="slider-group">
+            <label for="fairness-slider">Fairness vs. Speed:</label>
+            <input type="range" id="fairness-slider" min="0" max="4" step="1" value="2">
+            <span id="slider-value">Balanced</span>
+        </div>
+
+        <button id="find-meeting-points">Find Meeting Points</button>
+
+        <div id="results">
+            <h2>Results:</h2>
+            <ul id="results-list"></ul>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

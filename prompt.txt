@@ -1,0 +1,26 @@
+You are at the path /home/richie/halfway.
+I have created a DB (/home/richie/halfway/tfl.db) with schema (/home/richie/halfway/tfl.db.schema), that contains 2  
+    tables. Please examine the schema, pay attention to the table names, and cases. The table Stations contains a CODE and a name for all stations in London
+    on the underground, overground and tram. The FULLROUTES table contains a
+     from station code, to station code and a WEIGHT, which is the number of
+     minutes to get from one to the other. The table is exhaustive, is
+    contains the time taken to get from every station to every other
+    station.  
+
+I'd like you to create a website that allows users to find the fairest station to meet in London from 2+ starting points.
+
+THe algorithm works as followsL
+Construct a query to FULLROUTES like
+SELECT STATIONB, WEIGHT from FULLROUTES where STATIONA = XXX OR STATIONA = YYY OR ...
+
+then the results are gouped by STATIONB. Now we have for everystation, a list of N weights, where N is the number of starting points. From here we can find the fairest by calculating the list with the lowest variance. Or the fastest by find the list with the lowest mean. I'd like the UI to have a slider that on one side if the fairest anf the other is the fastest, and the suer can adjust and see the results change in real time. I want the caluclation to be fast.
+
+The input boxes should be autocomplete drop downs, popultaed with the names in the STATIONS table. It should not be possible to enter a value not in this table.
+
+I want the tech stack to by python, I want minimal js. I want the code to eb structured such that the logic can be tested with unit tests, the db access can be tested, and then the APIS can be tested wothout a UI. If you need to run a server, run it in the backgound and pipe the logs to a file you can access.
+
+Please use uv for package managment, ruff for linting, mypy for type checking and pytest for testing. please use a pyproject.toml file for all config.
+
+I first want you to come up with a plan, and code design. Then I will check and answer any questions you have, then we will proceed.
+
+
