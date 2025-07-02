@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
 from halfway_backend.database import get_db, get_all_stations
 from halfway_backend.logic import calculate_meeting_points
-from halfway_backend.models import StationInput, MeetingPointResult
+from halfway_backend.models import StationInput, MeetingPointResult, Journey
 import sqlite_utils
 from pathlib import Path
 
@@ -85,7 +85,12 @@ async def calculate_fairest_fastest(input: StationInput, fairness_weight: float 
     for result in calculated_results:
         station_name = station_names_map.get(result["station_code"])
         if station_name:
+            journeys = [
+                Journey(from_station=start_station, time=time)
+                for start_station, time in zip(input.stations, result["times"])
+            ]
             result["station_name"] = station_name
+            result["journeys"] = journeys
             final_results.append(MeetingPointResult(**result))
     
     return final_results

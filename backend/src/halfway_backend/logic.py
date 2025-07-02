@@ -19,7 +19,8 @@ def calculate_meeting_points(journey_data: dict, fairness_weight: float) -> list
             "station_code": station_code,
             "mean_time": mean_time,
             "variance": variance,
-            "score": score
+            "score": score,
+            "times": times
         })
     
     # Sort results by score (lowest score is best)

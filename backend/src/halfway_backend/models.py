@@ -3,8 +3,13 @@ from pydantic import BaseModel
 class StationInput(BaseModel):
     stations: list[str]
 
+class Journey(BaseModel):
+    from_station: str
+    time: int
+
 class MeetingPointResult(BaseModel):
     station_name: str
     mean_time: float
     variance: float
-    score: float # A combined score based on fairness and speed
+    score: float
+    journeys: list[Journey]

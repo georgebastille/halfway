@@ -3,11 +3,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const addStationButton = document.getElementById('add-station');
     const fairnessSlider = document.getElementById('fairness-slider');
     const sliderValueSpan = document.getElementById('slider-value');
-    const findMeetingPointsButton = document.getElementById('find-meeting-points');
     const resultsList = document.getElementById('results-list');
 
     let stationCounter = 2;
     let allStations = [];
+
+    function updateResults() {
+        const fairnessWeight = (parseFloat(fairnessSlider.value) / 4 * 0.9) + 0.1;
+        updateMeetingPoints(fairnessWeight);
+    }
 
     // Fetch all stations for autocomplete
     fetch('/api/stations')
@@ -42,6 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     b.addEventListener("click", function(e) {
                         input.value = this.getElementsByTagName("input")[0].value;
                         closeAllLists();
+                        updateResults();
                     });
                     a.appendChild(b);
                 }
@@ -138,9 +143,27 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.length === 0) {
                 resultsList.innerHTML = '<li>No meeting points found.</li>';
             } else {
-                data.forEach(result => {
+                data.slice(0, 10).forEach(result => {
                     const li = document.createElement('li');
-                    li.textContent = `${result.station_name} (Mean Time: ${result.mean_time.toFixed(2)} mins, Variance: ${result.variance.toFixed(2)})`;
+                    li.classList.add('result-card');
+
+                    let journeysHtml = result.journeys.map(journey => `
+                        <div class="journey">
+                            <span class="from">${journey.from_station}</span>
+                            <span class="time">${journey.time} min</span>
+                        </div>
+                    `).join('');
+
+                    li.innerHTML = `
+                        <h3>${result.station_name}</h3>
+                        <div class="journeys-container">
+                            ${journeysHtml}
+                        </div>
+                        <div class="stats">
+                            <span>Avg: ${result.mean_time.toFixed(1)}m</span>
+                            <span>Unfairness: ${result.variance.toFixed(1)}</span>
+                        </div>
+                    `;
                     resultsList.appendChild(li);
                 });
             }
@@ -150,11 +173,6 @@ document.addEventListener('DOMContentLoaded', () => {
             resultsList.innerHTML = '<li>Error fetching results.</li>';
         });
     }
-
-    findMeetingPointsButton.addEventListener('click', () => {
-        const fairnessWeight = parseFloat(fairnessSlider.value) / 4;
-        updateMeetingPoints(fairnessWeight);
-    });
 
     fairnessSlider.addEventListener('input', (e) => {
         const value = parseInt(e.target.value);
@@ -178,16 +196,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
         }
         sliderValueSpan.textContent = fairnessText;
-        const fairnessWeight = value / 4.0;
-
-        const selectedStations = [];
-        document.querySelectorAll('.station-input').forEach(input => {
-            if (input.value.trim() !== '') {
-                selectedStations.push(input.value.trim());
-            }
-        });
-        if (selectedStations.length >= 2) {
-            updateMeetingPoints(fairnessWeight);
-        }
+        updateResults();
     });
+
+    // Initial results update
+    updateResults();
 });
