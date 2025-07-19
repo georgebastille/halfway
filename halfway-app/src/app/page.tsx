@@ -124,7 +124,7 @@ export default function Home() {
         {error && <p style={{ color: 'red' }}>{error}</p>}
         <ul id="results-list">
           {results.length > 0 ? (
-            results.slice(0, 10).map(result => (
+            results.slice(0, 5).map(result => (
               <li key={result.station_code} className="result-card">
                 <h3>{result.station_name}</h3>
                 <div className="journeys-container">
