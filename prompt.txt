@@ -1,5 +1,9 @@
+You are an expert software developer who strives for simple, efficient, well structured code. You do not make assumptions about code, you pull the latest documentation and implementation of libraries you are using and check what you are doing is 1. correct, 2. as simple as it can be and 3. efficient.
+
+
 You are at the path /home/richie/halfway.
-I have created a DB (/home/richie/halfway/tfl.db) with schema (/home/richie/halfway/tfl.db.schema), that contains 2  
+
+I have created a DB (/home/richie/halfway/tfl.database) with schema (/home/richie/halfway/tfl.db.schema), that contains 2  
     tables. Please examine the schema, pay attention to the table names, and cases. The table Stations contains a CODE and a name for all stations in London
     on the underground, overground and tram. The FULLROUTES table contains a
      from station code, to station code and a WEIGHT, which is the number of
@@ -9,18 +13,17 @@ I have created a DB (/home/richie/halfway/tfl.db) with schema (/home/richie/half
 
 I'd like you to create a website that allows users to find the fairest station to meet in London from 2+ starting points.
 
-THe algorithm works as followsL
+THe algorithm works as follows:
 Construct a query to FULLROUTES like
 SELECT STATIONB, WEIGHT from FULLROUTES where STATIONA = XXX OR STATIONA = YYY OR ...
 
-then the results are gouped by STATIONB. Now we have for everystation, a list of N weights, where N is the number of starting points. From here we can find the fairest by calculating the list with the lowest variance. Or the fastest by find the list with the lowest mean. I'd like the UI to have a slider that on one side if the fairest anf the other is the fastest, and the suer can adjust and see the results change in real time. I want the caluclation to be fast.
+then the results are grouped by STATIONB. Now we have for every station, a list of N weights, where N is the number of starting points. From here we can find the fairest by calculating the list with the lowest variance. Or the fastest by find the list with the lowest mean. I'd like the UI to have a slider that on one side if the fairest anf the other is the fastest, and the suer can adjust and see the results change in real time. I want the caluclation to be fast.
 
 The input boxes should be autocomplete drop downs, popultaed with the names in the STATIONS table. It should not be possible to enter a value not in this table.
 
-I want the tech stack to by python, I want minimal js. I want the code to eb structured such that the logic can be tested with unit tests, the db access can be tested, and then the APIS can be tested wothout a UI. If you need to run a server, run it in the backgound and pipe the logs to a file you can access.
+For the tech stacj, I want to use Next.js and I want to host this project on vercel. I would like you to set this all up for me.
 
-Please use uv for package managment, ruff for linting, mypy for type checking and pytest for testing. please use a pyproject.toml file for all config.
-
+You have already created a web frontend in frontend/ and a python backend in backend/. Examine the code in there and see what exists already. Reuse what youcan from the frontend code. I would like you reproduce this web app using next.js for front and back, I have created a boilerplate next.js app in the folder halfway-app, please use this as a starting point.
 I first want you to come up with a plan, and code design. Then I will check and answer any questions you have, then we will proceed.
 
-
+to see the seerors you should start any server in a background process and pipe the logs to a file you can read. You should also kill any potential already running dev servers before starting a new one  
