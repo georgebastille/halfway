@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Halfway
+
+Find the fairest place for a group to meet in London based on Tube, Overground, and Tram travel times.
+
+## Overview
+
+This project helps groups of people find the most convenient station to meet at in London. It considers the travel time for each person from their starting station to every other station in the network.
+
+The application provides a simple interface where users can input two or more starting stations. It then calculates potential meeting points and ranks them based on a user-adjustable slider that weighs between:
+
+*   **Fairest:** The meeting point with the lowest variance in travel times for all members of the group.
+*   **Fastest:** The meeting point with the lowest average travel time for the group.
+
+## Tech Stack
+
+This application is a modern web app built with the following technologies:
+
+*   **Framework:** [Next.js](https://nextjs.org/) (React)
+*   **Language:** [TypeScript](https://www.typescriptlang.org/)
+*   **Database:** [SQLite](https://www.sqlite.org/index.html) (via the `better-sqlite3` package)
+*   **Styling:** [Tailwind CSS](https://tailwindcss.com/)
+*   **Deployment:** [Vercel](https://vercel.com/)
+
+The backend logic and API are handled by Next.js API Routes, which query a pre-built SQLite database containing all station-to-station travel times.
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+*   [Node.js](https://nodejs.org/en/) (v18 or later recommended)
+*   [npm](https://www.npmjs.com/) (comes with Node.js)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Local Development
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1.  **Clone the repository and navigate to the app directory:**
+    ```bash
+    git clone <repository-url>
+    cd halfway/halfway-app
+    ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
 
-## Learn More
+3.  **Run the development server:**
+    ```bash
+    npm run dev
+    ```
 
-To learn more about Next.js, take a look at the following resources:
+4.  **Open the application:**
+    Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deployment
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+This application is optimized for deployment on [Vercel](https://vercel.com/).
 
-## Deploy on Vercel
+1.  **Install the Vercel CLI:**
+    While you can install it globally, using `npx` is recommended to always use the latest version.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+2.  **Login to Vercel:**
+    This command will prompt you to log in to your Vercel account.
+    ```bash
+    npx vercel login
+    ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+3.  **Deploy to Production:**
+    From the `halfway-app` directory, run the deployment command. Vercel will automatically detect the Next.js project, build it, and deploy it.
+    ```bash
+    npx vercel --prod
+    ```
+
+Vercel will provide you with a public URL for your deployed application.
