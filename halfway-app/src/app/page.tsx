@@ -87,7 +87,7 @@ export default function Home() {
 
   return (
     <div className="container">
-      <h1>Halfway Meeting Point Finder</h1>
+      <h1>Halfway</h1>
 
       <div id="station-inputs">
         {stationInputs.map((input, index) => (
